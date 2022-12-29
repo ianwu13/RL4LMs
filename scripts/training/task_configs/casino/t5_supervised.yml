@@ -21,6 +21,7 @@ alg:
     evaluation_strategy: epoch
     logging_strategy: epoch
     save_strategy: epoch
+    report_to: none
   model_type: seq2seq
   model_name: t5-base
   generation_kwargs:
