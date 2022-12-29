@@ -6,11 +6,11 @@
 #SBATCH --time=05:15:00
 
 # Change to proper directory
-if [[ "$PWD" =~ "RL4LMS/slurms" ]]
+if [[ "$PWD" =~ "RL4LMs/slurms" ]]
 then 
     cd ..
 else
-    echo 'SLURM JOBS MUST BE RUN FROM "RL4LMS/slurms" FOR THIS PROJECT'
+    echo 'SLURM JOBS MUST BE RUN FROM "RL4LMs/slurms" FOR THIS PROJECT'
     return -1
 fi
 
