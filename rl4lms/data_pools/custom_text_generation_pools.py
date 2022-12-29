@@ -581,6 +581,34 @@ class DailyDialog(TextGenPool):
         dp_instance = cls(samples)
         return dp_instance
 
+class CaSiNoDialog(TextGenPool):
+    EOU_TOKEN = "<EOU>"
+    @classmethod
+    def prepare(cls, split: str, processed_data_dir: str):
+        split = CommonGen.gen_split_name(split)
+        
+        if split in ["train", "test"]:
+            dat_path = os.path.join(processed_data_dir, f"{split}.csv")
+        elif split == "validation":
+            dat_path = os.path.join(processed_data_dir, "eval.csv")
+        else:
+            raise ValueError
+
+        dataset = load_dataset("csv", data_files={f"casino_{split}": dat_path})
+        samples = []
+        for ix, item in enumerate(dataset[f"casino_{split}"]):
+
+            context = item["input_seq"]
+            target = item["response"] + " " + CaSiNoDialog.EOU_TOKEN            
+            sample = Sample(id=ix, 
+                            prompt_or_input_text=context, 
+                            references=[target],
+                            )
+            samples.append(sample)
+
+        dp_instance = cls(samples)
+        return dp_instance
+
 
 if __name__ == "__main__":
     from transformers import AutoTokenizer

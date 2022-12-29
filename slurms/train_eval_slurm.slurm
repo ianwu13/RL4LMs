@@ -1,9 +1,9 @@
 #!/bin/bash
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:a100:2
+#SBATCH --gres=gpu:a100:1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
-#SBATCH --time=05:15:00
+#SBATCH --time=10:15:00
 
 # Change to proper directory
 if [[ "$PWD" =~ "RL4LMs/slurms" ]]
@@ -24,8 +24,9 @@ pip3 install torch torchvision torchaudio --extra-index-url https://download.pyt
 pip install -e .
 
 # run
-python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/dialog/gpt2_nlpo_on_supervised.yml --base_path_to_store_results ../logs/ --experiment_name dd_test3_a100
+python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/casino\t5_supervised.yml --base_path_to_store_results ../logs/ --experiment_name casino_sup1
 
 # configs
 # scripts/training/task_configs/synthetic_generate_increasing_numbers/t5_nlpo.yml
 # scripts/training/task_configs/dialog/gpt2_nlpo_on_supervised.yml
+# scripts\training\task_configs\casino\t5_supervised.yml
