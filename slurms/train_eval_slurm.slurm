@@ -16,6 +16,7 @@ fi
 
 # load modules
 module load python/3.7.6
+module load git/2.25.0
 
 # load libraries
 pip install -e .
