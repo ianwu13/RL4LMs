@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=gpu
-#SBATCH --gres=gpu:v100:2
+#SBATCH --gres=gpu:a100:2
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=05:15:00
@@ -18,11 +18,14 @@ fi
 module load python/3.7.6
 module load git/2.25.0
 
+pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116
+
 # load libraries
 pip install -e .
 
 # run
-python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/synthetic_generate_increasing_numbers/t5_nlpo.yml --base_path_to_store_results ../logs/ --experiment_name syn_test2
+python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/dialog/gpt2_nlpo_on_supervised.yml --base_path_to_store_results ../logs/ --experiment_name dd_test3_a100
 
 # configs
+# scripts/training/task_configs/synthetic_generate_increasing_numbers/t5_nlpo.yml
 # scripts/training/task_configs/dialog/gpt2_nlpo_on_supervised.yml
