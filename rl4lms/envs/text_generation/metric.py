@@ -490,7 +490,7 @@ class Seq2SeqPerplexity(BaseMetric):
         return {
             "fluency_metrics/seq2seq_perplexity": (
                 None,
-                torch.exp(torch.mean(nlls)).item(),
+                torch.exp(torch.mean(torch.stack(nlls))).item(),
             )
         }
 
