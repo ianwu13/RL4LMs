@@ -23,9 +23,11 @@ alg:
   model_type: seq2seq
   model_name: t5-base
   generation_kwargs:
-    do_sample: False
+    do_sample: True
+    top_k: 50
+    top_p: 0.6
     min_length: 5
-    num_beams: 5
+    num_beams: 1
     max_new_tokens: 100
     post_processing_fn: null
 
