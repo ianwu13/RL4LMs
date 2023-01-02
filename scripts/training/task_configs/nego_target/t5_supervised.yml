@@ -3,7 +3,7 @@ tokenizer:
   padding_side: right
   truncation_side: right
   pad_token_as_eos_token: False
-  max_length: 1024
+  max_length: 512
 
 datapool:
   id: nego_target
