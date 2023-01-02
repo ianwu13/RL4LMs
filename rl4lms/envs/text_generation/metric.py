@@ -481,7 +481,7 @@ class Seq2SeqPerplexity(BaseMetric):
 
             with torch.no_grad():
                 outputs = model(encodings, labels=ref_encodings)
-                neg_log_likelihood = outputs[0].item()
+                neg_log_likelihood = outputs[0]
 
             nlls.append(neg_log_likelihood)
 
