@@ -412,6 +412,89 @@ class SummaCConvMetric(BaseMetric):
         return metric_dict
 
 
+class Seq2SeqPerplexity(BaseMetric):
+    def __init__(
+        self,
+        tokenizer_id: str,
+        model_type: str = "seq2seq",
+        padding_side: str = "right",
+        truncation_side: str = "right",
+        pad_token_as_eos_token: bool = False,
+        max_length: int = 512,
+    ) -> None:
+        super().__init__()
+        
+        self._tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
+        self._tokenizer.truncation_side = truncation_side
+        self._tokenizer.padding_side = padding_side
+        if self._tokenizer.pad_token is None and pad_token_as_eos_token:
+            self._tokenizer.pad_token = self._tokenizer.eos_token
+
+        self._max_length = max_length
+        self._model_type = model_type
+        self._batch_size = 16
+
+    def get_device(self, model: PreTrainedModel):
+        try:
+            return model.transformer.first_device
+        except:
+            return model.device
+
+    def compute(
+        self,
+        prompt_texts: List[str],
+        generated_texts: List[str],
+        reference_texts: List[List[str]],
+        meta_infos: List[Dict[str, Any]] = None,
+        model: PreTrainedModel = None,
+        split_name: str = None,
+    ) -> Tuple[List[float], float]:
+        if split_name == "train":
+            return {}
+
+        if self._model_type != "seq2seq":
+            raise NotImplementedError
+
+        device = self.get_device(model)
+
+        nlls = []
+        current_ix = 0
+        n_texts = len(generated_texts)
+        while current_ix < n_texts:
+            batch_ref_texts = [ii[0] for ii in reference_texts[
+                current_ix : current_ix + self._batch_size
+            ]]
+
+            batch_prompt_texts = prompt_texts[
+                current_ix : current_ix + self._batch_size
+            ]
+
+            encodings = self._tokenizer(
+                batch_prompt_texts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
+            ).input_ids.to(device)
+
+            ref_encodings = self._tokenizer(
+                batch_ref_texts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
+            ).input_ids.to(device)
+
+            ref_encodings[ref_encodings == 0] = -100
+
+            with torch.no_grad():
+                outputs = model(encodings, labels=ref_encodings)
+                neg_log_likelihood = outputs[0].item()
+
+            nlls.append(neg_log_likelihood)
+
+            current_ix += self._batch_size
+        
+        return {
+            "fluency_metrics/seq2seq_perplexity": (
+                None,
+                torch.exp(torch.mean(nlls)).item(),
+            )
+        }
+
+
 class Perplexity(BaseMetric):
     def __init__(
         self,

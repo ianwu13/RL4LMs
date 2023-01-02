@@ -37,6 +37,14 @@ train_evaluation:
     - id: meteor
       args: {}
     - id: rouge
+    - id: seq2seq_perplexity
+      args:
+        model_type: seq2seq
+        tokenizer_id: t5-base
+        padding_side: right
+        truncation_side: right
+        pad_token_as_eos_token: False
+        max_length: 512
     - id: bleu
       args: {}
     - id: bert_score
