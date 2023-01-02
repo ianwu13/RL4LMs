@@ -17,6 +17,7 @@ from rl4lms.data_pools.custom_text_generation_pools import (
     IMDBForSeq2Seq,
     IWSLT2017EnDe,
     NarrativeQA,
+    NegoTarget,
     ToTTo,
     WMT14PreprocessedEnDe,
     WMT16NewsOnlyDatasetEnDe,
@@ -100,6 +101,7 @@ class DataPoolRegistry:
         "crd3": CRD3DialogueGeneration,
         "daily_dialog": DailyDialog,
         "casino": CaSiNoDialog,
+        "nego_target": NegoTarget,
     }
 
     @classmethod

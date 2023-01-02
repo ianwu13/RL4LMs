@@ -1,0 +1,46 @@
+tokenizer:
+  model_name: t5-base
+  padding_side: right
+  truncation_side: right
+  pad_token_as_eos_token: False
+  max_length: 1024
+
+datapool:
+  id: nego_target
+  args:
+    data_dirs: ["/project/glucas_540/kchawla/nego_rl/data/nego_target/casino/"]
+
+alg:
+  id: supervised
+  training_args:
+    per_device_train_batch_size: 16
+    logging_steps: 715
+    num_train_epochs: 1
+    weight_decay: 0.01
+    learning_rate: 0.00002
+    save_total_limit: 1
+    report_to: none
+  model_type: seq2seq
+  model_name: t5-base
+  generation_kwargs:
+    do_sample: False
+    min_length: 5
+    num_beams: 5
+    max_new_tokens: 100
+    post_processing_fn: null
+
+train_evaluation:
+  eval_batch_size: 50
+  metrics:
+    - id: meteor
+      args: {}
+    - id: rouge
+    - id: bleu
+      args: {}
+    - id: bert_score
+      args:
+        language: en
+    - id: sacre_bleu
+      args:
+        tokenize: "intl"
+
