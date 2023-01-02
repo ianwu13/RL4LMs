@@ -696,6 +696,98 @@ class SacreBLEUMetric(BaseMetric):
         metric_dict = {"lexical/sacrebleu": (None, bleu_score)}
         return metric_dict
 
+class TargetFormatAndMSE(BaseMetric):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def has_good_form(self, prompt, txt):
+        """Check if the format of the generated text is good."""
+
+        if "total points: " not in txt:
+            return False
+        
+        if "food: " not in txt:
+            return False
+        
+        if "water: " not in txt:
+            return False
+        
+        if "firewood: " not in txt:
+            return False
+        
+        items = txt.split()
+
+        f_ix = -1
+        for ix, item in enumerate(items):
+            if item == "food:":
+                f_ix = ix
+                break
+        
+        if f_ix == -1:
+            return False
+        
+        # get deal counts
+        f_c, w_c, fi_c = int(items[f_ix + 1][:-1]), int(items[f_ix + 3][:-1]), int(items[f_ix + 5][:-1])
+        
+        # get pref scores
+        prompt_items = prompt.split()
+        prompt_f_ix = -1
+        for ix, item in enumerate(prompt_items):
+            if item == "food:":
+                prompt_f_ix = ix
+                break
+        
+        assert prompt_f_ix != -1
+
+        f_p, w_p, fi_p = int(prompt_items[prompt_f_ix + 2]), int(prompt_items[prompt_f_ix + 5]), int(prompt_items[prompt_f_ix + 8])
+
+        if item[f_ix + 8] != f"{f_c}*{f_p}":
+            return False
+
+        if item[f_ix + 10] != f"{w_c}*{w_p}":
+            return False
+
+        if item[f_ix + 12] != f"{fi_c}*{fi_p}":
+            return False
+
+        if int(item[f_ix + 14]) != f_c*f_p:
+            return False
+
+        if int(item[f_ix + 16]) != w_c*w_p:
+            return False
+
+        if int(item[f_ix + 18]) != fi_c*fi_p:
+            return False
+        
+        if int(item[f_ix + 20]) != (f_c*f_p + w_c*w_p + f_c*f_p):
+            return False
+
+        return True
+
+    def compute(
+        self,
+        prompt_texts: List[str],
+        generated_texts: List[str],
+        reference_texts: List[List[str]],
+        meta_infos: List[Dict[str, Any]] = None,
+        model: PreTrainedModel = None,
+        split_name: str = None,
+    ) -> Tuple[List[float], float]:
+
+        good_form = 0
+        for prompt, pred, refs in zip(prompt_texts, generated_texts, reference_texts):
+            ref = refs[0]
+
+            if self.has_good_form(prompt, pred):
+                good_form += 1
+        
+        good_form_acc = good_form / len(generated_texts)
+
+        metric_dict = {
+            "nego_target/format_accuracy": (None, good_form_acc)
+            }
+        return metric_dict
+
 
 class TERMetric(BaseMetric):
     def __init__(self) -> None:

@@ -45,6 +45,7 @@ from rl4lms.envs.text_generation.metric import (
     SummaCConvMetric,
     SummaCZSMetric,
     TERMetric,
+    TargetFormatAndMSE,
     chrFmetric,
     IntentAccuracyDailyDialog,
 )
@@ -165,6 +166,7 @@ class MetricRegistry:
         "summaCConv": SummaCConvMetric,
         "causal_perplexity": Perplexity,
         "seq2seq_perplexity": Seq2SeqPerplexity,
+        "target_format_and_mse": TargetFormatAndMSE,
         "cider": CIDERMetric,
         "spice": SpiceMetric,
         "parent_totto": ParentToTTo,
