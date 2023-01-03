@@ -762,18 +762,18 @@ class TargetFormatAndMSE(BaseMetric):
         if int(items[f_ix + 18]) != fi_c*fi_p:
             return False
         
-        if int(items[f_ix + 20]) != (f_c*f_p + w_c*w_p + f_c*f_p):
+        if int(items[f_ix + 20]) != (f_c*f_p + w_c*w_p + fi_c*fi_p):
             return False
 
         return True
 
-    def get_mse(self, pred, truth):
-        """Compute mse score."""
+    def get_rmse(self, pred, truth):
+        """Compute rmse score. Technically, just compute the se over here. complete rmse will be computed above in the pipeline."""
 
         return (pred - truth)**2
 
-    def compute_mses(self, pred, ref):
-        """Compute mse values."""
+    def compute_rmses(self, pred, ref):
+        """Compute rmse values."""
 
         pred_items = pred.split()
 
@@ -799,14 +799,14 @@ class TargetFormatAndMSE(BaseMetric):
         #ground truth
         f_r, w_r, fi_r, total_r = int(ref_items[f_ix + 1][:-1]), int(ref_items[f_ix + 3][:-1]), int(ref_items[f_ix + 5][:-1]), int(ref_items[f_ix + 20])
 
-        this_mse_dict = {
-            "mse_food": self.get_mse(pred=f_p, truth=f_r),
-            "mse_water": self.get_mse(pred=w_p, truth=w_r),
-            "mse_firewood": self.get_mse(pred=fi_p, truth=fi_r),
-            "mse_total_points": self.get_mse(pred=total_p, truth=total_r),
+        this_rmse_dict = {
+            "rmse_food": self.get_rmse(pred=f_p, truth=f_r),
+            "rmse_water": self.get_rmse(pred=w_p, truth=w_r),
+            "rmse_firewood": self.get_rmse(pred=fi_p, truth=fi_r),
+            "rmse_total_points": self.get_rmse(pred=total_p, truth=total_r),
         }
 
-        return this_mse_dict
+        return this_rmse_dict
 
     def compute(
         self,
@@ -819,14 +819,11 @@ class TargetFormatAndMSE(BaseMetric):
     ) -> Tuple[List[float], float]:
 
         good_forms = []
-        mse_dict = {
-            "mse_food": 0.0,
-            "mse_water": 0.0,
-            "mse_firewood": 0.0,
-            "mse_high": 0.0,
-            "mse_med": 0.0,
-            "mse_low": 0.0,
-            "mse_total_points": 0.0,
+        rmse_dict = {
+            "rmse_food": 0.0,
+            "rmse_water": 0.0,
+            "rmse_firewood": 0.0,
+            "rmse_total_points": 0.0,
         }
 
         for prompt, pred, refs in zip(prompt_texts, generated_texts, reference_texts):
@@ -839,10 +836,10 @@ class TargetFormatAndMSE(BaseMetric):
 
             ref = refs[0]
 
-            this_mse_dict = self.compute_mses(pred, ref)
+            this_rmse_dict = self.compute_rmses(pred, ref)
 
-            for k in this_mse_dict.keys():
-                mse_dict[k] += this_mse_dict[k]
+            for k in this_rmse_dict.keys():
+                rmse_dict[k] += this_rmse_dict[k]
         
         good_form_acc = sum(good_forms) / len(generated_texts)
 
@@ -852,10 +849,10 @@ class TargetFormatAndMSE(BaseMetric):
             "nego_target/good_count": (None, sum(good_forms)),
             }
 
-        for k in mse_dict.keys():
+        for k in rmse_dict.keys():
             if sum(good_forms) > 0:
-                mse_dict[k] = mse_dict[k] / sum(good_forms)
-                metric_dict[f"nego_target/{k}"] = (None, mse_dict[k])
+                rmse_dict[k] = (rmse_dict[k] / sum(good_forms))**0.5
+                metric_dict[f"nego_target/{k}"] = (None, rmse_dict[k])
             else:
                 metric_dict[f"nego_target/{k}"] = (None, -1)
 
