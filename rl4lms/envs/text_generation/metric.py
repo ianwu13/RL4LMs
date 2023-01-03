@@ -791,7 +791,7 @@ class TargetFormatAndMSE(BaseMetric):
 
         f_ix = -1
         for ix, item in enumerate(ref_items):
-            if item == "food:":
+            if "food:" in item:
                 f_ix = ix
                 break
         assert f_ix != -1
@@ -818,7 +818,7 @@ class TargetFormatAndMSE(BaseMetric):
         split_name: str = None,
     ) -> Tuple[List[float], float]:
 
-        good_form = 0
+        good_forms = []
         mse_dict = {
             "mse_food": 0.0,
             "mse_water": 0.0,
@@ -832,9 +832,10 @@ class TargetFormatAndMSE(BaseMetric):
         for prompt, pred, refs in zip(prompt_texts, generated_texts, reference_texts):
 
             if not self.has_good_form(prompt, pred):
+                good_forms.append(0)
                 continue
 
-            good_form += 1
+            good_forms.append(1)
 
             ref = refs[0]
 
@@ -843,17 +844,17 @@ class TargetFormatAndMSE(BaseMetric):
             for k in this_mse_dict.keys():
                 mse_dict[k] += this_mse_dict[k]
         
-        good_form_acc = good_form / len(generated_texts)
+        good_form_acc = sum(good_forms) / len(generated_texts)
 
         metric_dict = {
-            "nego_target/format_accuracy": (None, good_form_acc),
+            "nego_target/format_accuracy": (good_forms, good_form_acc),
             "nego_target/total_count": (None, len(generated_texts)),
-            "nego_target/good_count": (None, good_form),
+            "nego_target/good_count": (None, sum(good_forms)),
             }
 
         for k in mse_dict.keys():
-            if good_form > 0:
-                mse_dict[k] = mse_dict[k] / good_form
+            if sum(good_forms) > 0:
+                mse_dict[k] = mse_dict[k] / sum(good_forms)
                 metric_dict[f"nego_target/{k}"] = (None, mse_dict[k])
             else:
                 metric_dict[f"nego_target/{k}"] = (None, -1)
