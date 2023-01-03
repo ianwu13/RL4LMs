@@ -767,17 +767,43 @@ class TargetFormatAndMSE(BaseMetric):
 
         return True
 
-    def compute_mses(self, prompt, pred, ref):
+    def get_mse(self, pred, truth):
+        """Compute mse score."""
+
+        return (pred - truth)**2
+
+    def compute_mses(self, pred, ref):
         """Compute mse values."""
-        
+
+        pred_items = pred.split()
+
+        f_ix = -1
+        for ix, item in enumerate(pred_items):
+            if item == "food:":
+                f_ix = ix
+                break
+        assert f_ix != -1
+
+        #predictions
+        f_p, w_p, fi_p, total_p = int(pred_items[f_ix + 1][:-1]), int(pred_items[f_ix + 3][:-1]), int(pred_items[f_ix + 5][:-1]), int(pred_items[f_ix + 20])
+
+        ref_items = ref.split()
+
+        f_ix = -1
+        for ix, item in enumerate(ref_items):
+            if item == "food:":
+                f_ix = ix
+                break
+        assert f_ix != -1
+
+        #ground truth
+        f_r, w_r, fi_r, total_r = int(ref_items[f_ix + 1][:-1]), int(ref_items[f_ix + 3][:-1]), int(ref_items[f_ix + 5][:-1]), int(ref_items[f_ix + 20])
+
         this_mse_dict = {
-            "mse_food": 0.0,
-            "mse_water": 0.0,
-            "mse_firewood": 0.0,
-            "mse_high": 0.0,
-            "mse_med": 0.0,
-            "mse_low": 0.0,
-            "mse_total_points": 0.0,
+            "mse_food": self.get_mse(pred=f_p, truth=f_r),
+            "mse_water": self.get_mse(pred=w_p, truth=w_r),
+            "mse_firewood": self.get_mse(pred=fi_p, truth=fi_r),
+            "mse_total_points": self.get_mse(pred=total_p, truth=total_r),
         }
 
         return this_mse_dict
@@ -812,7 +838,7 @@ class TargetFormatAndMSE(BaseMetric):
 
             ref = refs[0]
 
-            this_mse_dict = self.compute_mses(prompt, pred, ref)
+            this_mse_dict = self.compute_mses(pred, ref)
 
             for k in this_mse_dict.keys():
                 mse_dict[k] += this_mse_dict[k]
