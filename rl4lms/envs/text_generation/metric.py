@@ -717,6 +717,9 @@ class TargetFormatAndMSE(BaseMetric):
         
         items = txt.split()
 
+        if len(items) < 21:
+            return False
+
         f_ix = -1
         for ix, item in enumerate(items):
             if item == "food:":
