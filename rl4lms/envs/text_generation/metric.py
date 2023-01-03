@@ -767,6 +767,21 @@ class TargetFormatAndMSE(BaseMetric):
 
         return True
 
+    def compute_mses(self, prompt, pred, ref):
+        """Compute mse values."""
+        
+        this_mse_dict = {
+            "mse_food": 0.0,
+            "mse_water": 0.0,
+            "mse_firewood": 0.0,
+            "mse_high": 0.0,
+            "mse_med": 0.0,
+            "mse_low": 0.0,
+            "mse_total_points": 0.0,
+        }
+
+        return this_mse_dict
+
     def compute(
         self,
         prompt_texts: List[str],
@@ -807,12 +822,15 @@ class TargetFormatAndMSE(BaseMetric):
         metric_dict = {
             "nego_target/format_accuracy": (None, good_form_acc),
             "nego_target/total_count": (None, len(generated_texts)),
-            "nego_target/good_count": (None, good_form)
+            "nego_target/good_count": (None, good_form),
             }
 
         for k in mse_dict.keys():
-            mse_dict[k] = mse_dict[k] / good_form
-            metric_dict[f"nego_target/{k}"] = (None, mse_dict[k])
+            if good_form > 0:
+                mse_dict[k] = mse_dict[k] / good_form
+                metric_dict[f"nego_target/{k}"] = (None, mse_dict[k])
+            else:
+                metric_dict[f"nego_target/{k}"] = (None, -1)
 
         return metric_dict
 
