@@ -744,25 +744,25 @@ class TargetFormatAndMSE(BaseMetric):
 
         f_p, w_p, fi_p = int(prompt_items[prompt_f_ix + 2]), int(prompt_items[prompt_f_ix + 5]), int(prompt_items[prompt_f_ix + 8])
 
-        if item[f_ix + 8] != f"{f_c}*{f_p}":
+        if items[f_ix + 8] != f"{f_c}*{f_p}":
             return False
 
-        if item[f_ix + 10] != f"{w_c}*{w_p}":
+        if items[f_ix + 10] != f"{w_c}*{w_p}":
             return False
 
-        if item[f_ix + 12] != f"{fi_c}*{fi_p}":
+        if items[f_ix + 12] != f"{fi_c}*{fi_p}":
             return False
 
-        if int(item[f_ix + 14]) != f_c*f_p:
+        if int(items[f_ix + 14]) != f_c*f_p:
             return False
 
-        if int(item[f_ix + 16]) != w_c*w_p:
+        if int(items[f_ix + 16]) != w_c*w_p:
             return False
 
-        if int(item[f_ix + 18]) != fi_c*fi_p:
+        if int(items[f_ix + 18]) != fi_c*fi_p:
             return False
         
-        if int(item[f_ix + 20]) != (f_c*f_p + w_c*w_p + f_c*f_p):
+        if int(items[f_ix + 20]) != (f_c*f_p + w_c*w_p + f_c*f_p):
             return False
 
         return True
@@ -778,19 +778,43 @@ class TargetFormatAndMSE(BaseMetric):
     ) -> Tuple[List[float], float]:
 
         good_form = 0
+        mse_dict = {
+            "mse_food": 0.0,
+            "mse_water": 0.0,
+            "mse_firewood": 0.0,
+            "mse_high": 0.0,
+            "mse_med": 0.0,
+            "mse_low": 0.0,
+            "mse_total_points": 0.0,
+        }
+
         for prompt, pred, refs in zip(prompt_texts, generated_texts, reference_texts):
+
+            if not self.has_good_form(prompt, pred):
+                continue
+
+            good_form += 1
+
             ref = refs[0]
 
-            if self.has_good_form(prompt, pred):
-                good_form += 1
+            this_mse_dict = self.compute_mses(prompt, pred, ref)
+
+            for k in this_mse_dict.keys():
+                mse_dict[k] += this_mse_dict[k]
         
         good_form_acc = good_form / len(generated_texts)
 
         metric_dict = {
-            "nego_target/format_accuracy": (None, good_form_acc)
+            "nego_target/format_accuracy": (None, good_form_acc),
+            "nego_target/total_count": (None, len(generated_texts)),
+            "nego_target/good_count": (None, good_form)
             }
-        return metric_dict
 
+        for k in mse_dict.keys():
+            mse_dict[k] = mse_dict[k] / good_form
+            metric_dict[f"nego_target/{k}"] = (None, mse_dict[k])
+
+        return metric_dict
 
 class TERMetric(BaseMetric):
     def __init__(self) -> None:
