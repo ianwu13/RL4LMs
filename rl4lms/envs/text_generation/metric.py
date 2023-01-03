@@ -17,7 +17,6 @@ from tqdm import tqdm
 import copy
 import rouge
 
-
 class BaseMetric:
     @abstractmethod
     def compute(
@@ -803,7 +802,11 @@ class TargetFormatAndMSE(BaseMetric):
             "rmse_food": self.get_rmse(pred=f_p, truth=f_r),
             "rmse_water": self.get_rmse(pred=w_p, truth=w_r),
             "rmse_firewood": self.get_rmse(pred=fi_p, truth=fi_r),
+            "mean_food_baseline": self.get_rmse(pred=1.5, truth=f_r),
+            "mean_water_baseline": self.get_rmse(pred=1.5, truth=w_r),
+            "mean_firewood_baseline": self.get_rmse(pred=1.5, truth=fi_r),
             "rmse_total_points": self.get_rmse(pred=total_p, truth=total_r),
+            "mean_points_baseline": self.get_rmse(pred=18, truth=total_r),
         }
 
         return this_rmse_dict
@@ -824,6 +827,10 @@ class TargetFormatAndMSE(BaseMetric):
             "rmse_water": 0.0,
             "rmse_firewood": 0.0,
             "rmse_total_points": 0.0,
+            "mean_food_baseline": 0.0,
+            "mean_water_baseline": 0.0,
+            "mean_firewood_baseline": 0.0,
+            "mean_points_baseline": 0.0,
         }
 
         for prompt, pred, refs in zip(prompt_texts, generated_texts, reference_texts):
