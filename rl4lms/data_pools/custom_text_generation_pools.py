@@ -618,6 +618,10 @@ class NegoTarget(TextGenPool):
         samples = []
         offset = 0
         for data_dir in data_dirs:
+            
+            if "dealornodeal" in data_dir:
+                if split in ["validation", "test"]:
+                    continue
 
             if split in ["train", "test"]:
                 dat_path = os.path.join(data_dir, f"{split}.csv")
