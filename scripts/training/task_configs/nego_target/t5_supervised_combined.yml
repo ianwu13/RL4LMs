@@ -9,13 +9,14 @@ datapool:
   id: nego_target
   args:
     data_dirs: ["/project/glucas_540/kchawla/nego_rl/data/nego_target/casino/","/project/glucas_540/kchawla/nego_rl/data/nego_target/dealornodeal/"]
+    min_yous: 3
 
 alg:
   id: supervised
   training_args:
     per_device_train_batch_size: 16
-    logging_steps: 715
-    num_train_epochs: 15
+    logging_steps: 1315
+    num_train_epochs: 5
     weight_decay: 0.01
     learning_rate: 0.00002
     save_total_limit: 1
@@ -45,7 +46,7 @@ train_evaluation:
         truncation_side: right
         pad_token_as_eos_token: False
         max_length: 512
-    - id: target_format_and_mse
+    - id: target_format_and_rmse
     - id: bleu
       args: {}
     - id: bert_score

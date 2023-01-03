@@ -1,4 +1,4 @@
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoModelForSeq2SeqLM
 from transformers import PreTrainedModel
 import torch
 from typing import List, Dict, Tuple, Any
@@ -410,6 +410,192 @@ class SummaCConvMetric(BaseMetric):
         }
         return metric_dict
 
+class TargetQualityMetric(BaseMetric):
+    """
+    Metric to grade the quality of responses with respect to a trained target model.
+
+    - This is a reference-free metric. So we will generate the score for both the model prediction and the ground-truth reference.
+    - The metric essentially computes S(t) = M(t) / m
+    
+    M(k) refers to the predicted total points by the trained target model, given the utterances from 1 to k. M(k) only takes in the dialogue histories that end in the YOU utterance.
+
+    m is the maximum possible score for that player (this formulation should work for both dealornodeal and CaSiNo).
+
+    S(k) would then capture the fractional points expected by the model if the given utterance is played (or used as the next response).
+    
+    """
+    def __init__(
+        self,
+        tokenizer_id: str,
+        target_model_dir: str,
+        padding_side: str = "right",
+        truncation_side: str = "right",
+        pad_token_as_eos_token: bool = False,
+        max_length: int = 512,
+        do_sample:bool = True,
+        top_k:int = 50,
+        top_p:float = 0.6,
+        min_length:int = 5,
+        num_beams:int = 1,
+        max_new_tokens:int = 100,
+    ) -> None:
+        super().__init__()
+        
+        #set up the tokenizer
+        self._tokenizer = AutoTokenizer.from_pretrained(tokenizer_id)
+        self._tokenizer.truncation_side = truncation_side
+        self._tokenizer.padding_side = padding_side
+        if self._tokenizer.pad_token is None and pad_token_as_eos_token:
+            self._tokenizer.pad_token = self._tokenizer.eos_token
+
+        self._max_length = max_length
+        self._batch_size = 16
+
+        self._device = f"cuda:{torch.cuda.device_count() - 1}" if torch.cuda.is_available() else "cpu"
+
+        # set up the model
+        self._model = AutoModelForSeq2SeqLM.from_pretrained(target_model_dir).to(self._device)
+
+        # set up generation params
+        self._do_sample = do_sample
+        self._top_k = top_k
+        self._top_p = top_p
+        self._min_length = min_length
+        self._num_beams = num_beams
+        self._max_new_tokens = max_new_tokens
+
+    def extract_model_points(self, prompt_txts, out_txts, max_points):
+        """Extract total points from generated texts. Return an avg score if the total could not be obtained. - half of max points may be."""
+        
+        model_points = []
+
+        for prompt_txt, out_txt, max_point in zip(prompt_txts, out_txts, max_points):
+            if not TargetFormatAndRMSE.has_good_form(prompt_txt, out_txt):
+                model_points.append(max_point / 2)
+                continue
+            
+            items = out_txt.split()
+            f_ix = -1
+            for ix, item in enumerate(items):
+                if item == "food:":
+                    f_ix = ix
+                    break
+            
+            if f_ix == -1:
+                return False
+            
+            model_points.append(int(items[f_ix + 20]))
+        
+        return model_points
+
+    def extract_max_points(self, prompt_txts):
+        """Extract maximum possible points from the prompt texts."""
+        
+        max_points = []
+        for prompt in prompt_txts:
+            # get pref scores
+            prompt_items = prompt.split()
+            prompt_f_ix = -1
+            for ix, item in enumerate(prompt_items):
+                if item == "food:":
+                    prompt_f_ix = ix
+                    break
+            
+            assert prompt_f_ix != -1
+
+            f_c, w_c, fi_c = int(prompt_items[prompt_f_ix + 1][:-1]), int(prompt_items[prompt_f_ix + 4][:-1]), int(prompt_items[prompt_f_ix + 7][:-1])
+
+            f_p, w_p, fi_p = int(prompt_items[prompt_f_ix + 2]), int(prompt_items[prompt_f_ix + 5]), int(prompt_items[prompt_f_ix + 8])
+
+            mp = f_c*f_p + w_c*w_p + fi_c*fi_p
+            max_points.append(mp)
+
+        return max_points
+    
+    def extend_prompt(self, prompt_txt, new_txt):
+        """Extend the prompt with the new txt so as to compute the score with the new utterance."""
+
+        assert "<eou>" not in new_txt
+        assert "<you>" in new_txt
+
+        new_prompt_txt = prompt_txt.replace("<history>", f"<history> {new_txt}")
+
+        return new_prompt_txt
+
+    def compute(
+        self,
+        prompt_texts: List[str],
+        generated_texts: List[str],
+        reference_texts: List[List[str]],
+        meta_infos: List[Dict[str, Any]] = None,
+        model: PreTrainedModel = None,
+        split_name: str = None,
+    ) -> Tuple[List[float], float]:
+        if split_name == "train":
+            return {}
+
+        pred_scores, ref_scores = [], []
+
+        current_ix = 0
+        n_texts = len(generated_texts)
+        while current_ix < n_texts:
+            batch_ref_texts = [ii[0] for ii in reference_texts[
+                current_ix : current_ix + self._batch_size
+            ]]
+            batch_gen_texts = generated_texts[
+                current_ix : current_ix + self._batch_size
+            ]
+            batch_prompt_texts = prompt_texts[
+                current_ix : current_ix + self._batch_size
+            ]
+
+            gen_prompts = [self.extend_prompt(prompt_txt, gen_txt) for prompt_txt, gen_txt in zip(batch_prompt_texts, batch_gen_texts)]
+            ref_prompts = [self.extend_prompt(prompt_txt, ref_txt) for prompt_txt, ref_txt in zip(batch_prompt_texts, batch_ref_texts)]
+
+            gen_encodings = self._tokenizer(
+                gen_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
+            ).input_ids.to(self._device)
+            ref_encodings = self._tokenizer(
+                ref_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
+            ).input_ids.to(self._device)
+
+            with torch.no_grad():
+                gen_outputs = model.generate(gen_encodings, do_sample=self._do_sample, top_k=self._top_k, top_p=self._top_p, min_length=self._min_length, num_beams=self._num_beams, max_new_tokens=self._max_new_tokens)
+
+                ref_outputs = model.generate(ref_encodings, do_sample=self._do_sample, top_k=self._top_k, top_p=self._top_p, min_length=self._min_length, num_beams=self._num_beams, max_new_tokens=self._max_new_tokens)
+
+            gen_dec = self._tokenizer.batch_decode(gen_outputs)
+            ref_dec = self._tokenizer.batch_decode(ref_outputs)
+
+            max_points = self.extract_max_points(batch_prompt_texts)
+
+            gen_points = self.extract_model_points(batch_prompt_texts, gen_dec, max_points)
+            ref_points = self.extract_model_points(batch_prompt_texts, ref_dec, max_points)
+
+            assert type(max_points) == type(gen_points) == type(ref_points) == list
+            assert len(max_points) == len(gen_points) == len(ref_points) == len(batch_ref_texts)
+
+            pred_scores += [(gp / mp) for gp, mp in zip(gen_points, max_points)]
+            ref_scores += [(rp / mp) for rp, mp in zip(ref_points, max_points)]
+
+            current_ix += self._batch_size
+        
+        assert len(pred_scores) == len(ref_scores) == len(generated_texts)
+        
+        return {
+            "target_metrics/gen_perf": (
+                None,
+                np.mean(pred_scores),
+            ),
+            "target_metrics/ref_perf": (
+                None,
+                np.mean(ref_scores),
+            ),
+            "target_metrics/total_count": (
+                None,
+                len(ref_scores),
+            ),
+        }
 
 class Seq2SeqPerplexity(BaseMetric):
     def __init__(
@@ -695,11 +881,15 @@ class SacreBLEUMetric(BaseMetric):
         metric_dict = {"lexical/sacrebleu": (None, bleu_score)}
         return metric_dict
 
-class TargetFormatAndMSE(BaseMetric):
+class TargetFormatAndRMSE(BaseMetric):
+    """
+    Metric used for training the target model. This captures the RMSE and format checking to understand how the target model has been trained.
+    """
     def __init__(self) -> None:
         super().__init__()
 
-    def has_good_form(self, prompt, txt):
+    @staticmethod
+    def has_good_form(prompt, txt):
         """Check if the format of the generated text is good."""
 
         if "total points: " not in txt:
@@ -835,7 +1025,7 @@ class TargetFormatAndMSE(BaseMetric):
 
         for prompt, pred, refs in zip(prompt_texts, generated_texts, reference_texts):
 
-            if not self.has_good_form(prompt, pred):
+            if not TargetFormatAndRMSE.has_good_form(prompt, pred):
                 good_forms.append(0)
                 continue
 
@@ -864,6 +1054,8 @@ class TargetFormatAndMSE(BaseMetric):
                 metric_dict[f"nego_target/{k}"] = (None, -1)
 
         return metric_dict
+
+
 
 class TERMetric(BaseMetric):
     def __init__(self) -> None:
