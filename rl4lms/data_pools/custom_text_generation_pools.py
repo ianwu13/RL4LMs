@@ -612,7 +612,7 @@ class CaSiNoDialog(TextGenPool):
 class NegoTarget(TextGenPool):
     EOU_TOKEN = "<EOU>"
     @classmethod
-    def prepare(cls, split: str, data_dirs: list, min_yous: int, has_utt: str):
+    def prepare(cls, split: str, data_dirs: list, min_yous: int, has_utt: str, remove_walkaways: bool):
         split = CommonGen.gen_split_name(split)
         
         samples = []
@@ -642,6 +642,12 @@ class NegoTarget(TextGenPool):
                     continue
 
                 target = item["response"] + " " + NegoTarget.EOU_TOKEN
+
+                if remove_walkaways:
+                    # remove walkaways
+                    if "0 + 0 + 0 = 0" in target:
+                        continue
+
                 sample = Sample(id=offset + ix, 
                                 prompt_or_input_text=context, 
                                 references=[target],

@@ -1,5 +1,5 @@
 tokenizer:
-  model_name: t5-large
+  model_name: t5-base
   padding_side: right
   truncation_side: right
   pad_token_as_eos_token: False
@@ -10,20 +10,21 @@ datapool:
   args:
     data_dirs: ["/project/glucas_540/kchawla/nego_rl/data/nego_target/casino/","/project/glucas_540/kchawla/nego_rl/data/nego_target/dealornodeal/"]
     min_yous: -1
-    has_utt: i accept this deal.
+    has_utt: <history>
+    remove_walkaways: True
 
 alg:
   id: supervised
   training_args:
     per_device_train_batch_size: 16
-    logging_steps: 100
+    logging_steps: 1315
     num_train_epochs: 15
     weight_decay: 0.01
     learning_rate: 0.0001
     save_total_limit: 1
     report_to: none
   model_type: seq2seq
-  model_name: t5-large
+  model_name: t5-base
   generation_kwargs:
     do_sample: True
     top_k: 50
