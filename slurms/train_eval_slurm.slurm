@@ -24,7 +24,7 @@ pip3 install torch torchvision torchaudio --extra-index-url https://download.pyt
 pip install -e .
 
 # run
-python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_target/t5_supervised_combined.yml --base_path_to_store_results ../logs/ --experiment_name nego_target_sup_comb_lr1e3_e15
+python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_target/t5_supervised_combined.yml --base_path_to_store_results ../logs/ --experiment_name nego_target_sup_comb_lr1e4_e15_mu_0
 
 # configs
 # scripts/training/task_configs/synthetic_generate_increasing_numbers/t5_nlpo.yml
