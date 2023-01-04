@@ -10,6 +10,7 @@ datapool:
   args:
     data_dirs: ["/project/glucas_540/kchawla/nego_rl/data/nego_target/casino/","/project/glucas_540/kchawla/nego_rl/data/nego_target/dealornodeal/"]
     min_yous: -1
+    has_utt: i accept this deal.
 
 alg:
   id: supervised
@@ -18,7 +19,7 @@ alg:
     logging_steps: 1315
     num_train_epochs: 15
     weight_decay: 0.01
-    learning_rate: 0.001
+    learning_rate: 0.0001
     save_total_limit: 1
     report_to: none
   model_type: seq2seq
