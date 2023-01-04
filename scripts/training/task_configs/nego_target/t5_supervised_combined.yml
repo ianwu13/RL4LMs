@@ -1,5 +1,5 @@
 tokenizer:
-  model_name: t5-base
+  model_name: t5-large
   padding_side: right
   truncation_side: right
   pad_token_as_eos_token: False
@@ -23,7 +23,7 @@ alg:
     save_total_limit: 1
     report_to: none
   model_type: seq2seq
-  model_name: t5-base
+  model_name: t5-large
   generation_kwargs:
     do_sample: True
     top_k: 50
