@@ -612,7 +612,16 @@ class CaSiNoDialog(TextGenPool):
 class NegoTarget(TextGenPool):
     EOU_TOKEN = "<EOU>"
     @classmethod
-    def prepare(cls, split: str, data_dirs: list, min_yous: int, has_utt: str, remove_walkaways: bool):
+    def prepare(
+        cls,
+        split: str,
+        data_dirs: list,
+        min_yous: int,
+        past_k: int = -1,
+        has_utt: str = "<history>",
+        remove_walkaways: bool = False,
+        contain_offer: bool = False,
+        ):
         split = CommonGen.gen_split_name(split)
         
         samples = []
@@ -641,6 +650,18 @@ class NegoTarget(TextGenPool):
                 if has_utt not in context:
                     continue
 
+                if past_k != -1:
+                    utt_count = context.count("<you>") + context.count("<them>")
+                    if utt_count < past_k:
+                        # not possible to use this instance.
+                        continue
+                    context = NegoTarget.keep_past_k_utts(context, past_k)
+
+                if contain_offer:
+                    # the context must contain offer statements.
+                    if not NegoTarget.contain_offer(context):
+                        continue
+
                 target = item["response"] + " " + NegoTarget.EOU_TOKEN
 
                 if remove_walkaways:
@@ -658,6 +679,65 @@ class NegoTarget(TextGenPool):
 
         dp_instance = cls(samples)
         return dp_instance
+
+    @staticmethod
+    def keep_past_k_utts(context, past_k):
+        """Only keep past k utterances - we know that the context definitely contains atleast past k utterances.
+        
+        We further know that the last utterance starts with a <you>. right..so the past k utterances will follow <you>, <them>, <you>, <them>..etc. we simply find that instance and chop stuff off after that.
+
+        Note that the context is already reversed.
+        """
+        assert context.count("<you>") + context.count("<them>") >= past_k
+
+        if context.count("<you>") + context.count("<them>") == past_k:
+            # there are exactly past_k utterances; return the context as it is.
+            return context
+
+        words = context.split()
+
+        found = 0
+        save = None
+        for ix, word in enumerate(words):
+            if word in ["<you>", "<them>"]:
+                found += 1
+            
+            if found > past_k:
+                # this is the start of (past_k + 1)th utterance. - we don't need stuff from here and to the right.
+                save = ix
+                break
+        
+        assert save
+        
+        new_context = " ".join(words[:save])
+        return new_context
+
+    @staticmethod
+    def contain_offer(context):
+        """check if the context contains offer exchange - from either side is fine.
+        basically, check for numerics right - food, water, firewood, 0, 1, 2, 3, one, two, three, everything else?, book, ball, hat, all the, etc. make sure that the numerics go beyond - just check for counts..can even bypass this check for dealornodeal - assuming that is always true.
+        """
+        if 'book:' in context or 'hat:' in context or 'ball:' in context:
+            # this is a DND instance. assume this is true.
+            return True
+
+        history = context.split("<history>")[-1]
+        
+        disagree = ['no', 'not', "n't", 'nothing', 'dont', "nope", "don't", "unfair"]
+        agree = ['ok', 'okay', 'great', 'perfect', 'deal', 'that works', 'i can do that', 'sounds fair', 'sounds good', 'thanks']
+        offer_numbers = ['0', '1', '2', '3', 'one', 'two', 'three', 'all the', 'i get', 'you get', 'what if', 'i take', 'you can take', 'can do']
+
+        lexicon = disagree + agree + offer_numbers
+
+        score = 0
+        for w in lexicon:
+            if(w in history):
+                score += 1
+
+        if score >= 2:
+            return True
+
+        return False
 
 if __name__ == "__main__":
     from transformers import AutoTokenizer

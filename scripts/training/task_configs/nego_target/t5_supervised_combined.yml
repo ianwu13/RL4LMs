@@ -3,15 +3,17 @@ tokenizer:
   padding_side: right
   truncation_side: right
   pad_token_as_eos_token: False
-  max_length: 256
+  max_length: 512
 
 datapool:
   id: nego_target
   args:
     data_dirs: ["/project/glucas_540/kchawla/nego_rl/data/nego_target/casino/","/project/glucas_540/kchawla/nego_rl/data/nego_target/dealornodeal/"]
     min_yous: -1
+    past_k: 4 # min utts = k and only keep most recent k utterances. 
     has_utt: <history>
     remove_walkaways: True
+    contain_offer: True # make sure that the set of four instance contains an offer info.
 
 alg:
   id: supervised
