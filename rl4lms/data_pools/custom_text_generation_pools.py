@@ -696,7 +696,9 @@ class NegoTarget(TextGenPool):
     @staticmethod
     def remove_persona(context):
         """remove persona statements from the context."""
-        return context
+
+        new_context = f'{context.split("<persona>")[0]}<persona> <history>{context.split("<history>")[-1]}'
+        return new_context
 
     @staticmethod
     def add_dropout(context, dropout_type, dropout_prob):
