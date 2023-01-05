@@ -621,6 +621,8 @@ class NegoTarget(TextGenPool):
         has_utt: str = "<history>",
         remove_walkaways: bool = False,
         contain_offer: bool = False,
+        dropout_type: str = None,
+        dropout_prob: float = 0.5,
         ):
         split = CommonGen.gen_split_name(split)
         
@@ -663,6 +665,12 @@ class NegoTarget(TextGenPool):
                     if not NegoTarget.contain_offer(context):
                         continue
 
+                if dropout_type == "linear":
+                    # add a linear dropout to the context.
+                    context = NegoTarget.add_dropout(context, dropout_type, dropout_prob)
+                elif dropout_type:
+                    raise NotImplementedError
+
                 target = item["response"] + " " + NegoTarget.EOU_TOKEN
 
                 if remove_walkaways:
@@ -680,6 +688,45 @@ class NegoTarget(TextGenPool):
 
         dp_instance = cls(samples)
         return dp_instance
+
+    @staticmethod
+    def add_dropout(context, dropout_type, dropout_prob):
+        """Add dropout to the context. Drop utterances with some prob."""
+        assert dropout_type in ["linear"]
+
+        context_items = [item.strip() for item in context.split("<history>")]
+        history = context_items[-1]
+        history_words = history.split()
+        for w in history_words:
+            assert w
+
+        # each utt is a sequence of words.
+        utts = []
+
+        curr_utt = []
+        for w in history_words:
+            if w in ["<you>", "<them>"]:
+                # save previous utterance; and reset.
+                utts.append(curr_utt[:])
+                curr_utt = [w]
+            else:
+                # prev utterance continues; just store the word
+                curr_utt.append(w)
+        
+        # end condition; store the last utterance.
+        if curr_utt:
+            utts.append(curr_utt[:])
+        
+        assert len(utts) == context.count("<you>") + context.count("<them>")
+
+        utts.reverse()
+        # we continuously keep decreasing the dropout prob.
+        utts_new = []
+        curr_dropout_prob = dropout_prob
+        for utt in utts:
+            pass
+        # TODO: finish this as required.
+        return context
 
     @staticmethod
     def keep_past_k_utts(context, past_k):

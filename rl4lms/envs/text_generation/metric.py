@@ -1,3 +1,4 @@
+import random
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoModelForSeq2SeqLM
 from transformers import PreTrainedModel
 import torch
@@ -994,15 +995,22 @@ class TargetFormatAndRMSE(BaseMetric):
         #ground truth
         f_r, w_r, fi_r, total_r = int(ref_items[f_ix + 1][:-1]), int(ref_items[f_ix + 3][:-1]), int(ref_items[f_ix + 5][:-1]), int(ref_items[f_ix + 20])
 
+        # priorities
+        f_pref, w_pref, fi_pref = int(ref_items[f_ix + 8].split("*")[-1]), int(ref_items[f_ix + 10].split("*")[-1]), int(ref_items[f_ix + 12].split("*")[-1])
+
+        # random predictions
+        f_rand, w_rand, fi_rand = random.choice([0,1,2,3]), random.choice([0,1,2,3]), random.choice([0,1,2,3])
+        total_rand = f_rand*f_pref + w_rand*w_pref + fi_rand*fi_pref
+
         this_rmse_dict = {
             "rmse_food": self.get_rmse(pred=f_p, truth=f_r),
             "rmse_water": self.get_rmse(pred=w_p, truth=w_r),
             "rmse_firewood": self.get_rmse(pred=fi_p, truth=fi_r),
-            "mean_food_baseline": self.get_rmse(pred=1.5, truth=f_r),
-            "mean_water_baseline": self.get_rmse(pred=1.5, truth=w_r),
-            "mean_firewood_baseline": self.get_rmse(pred=1.5, truth=fi_r),
+            "rand_food_baseline": self.get_rmse(pred=f_rand, truth=f_r),
+            "rand_water_baseline": self.get_rmse(pred=w_rand, truth=w_r),
+            "rand_firewood_baseline": self.get_rmse(pred=fi_rand, truth=fi_r),
             "rmse_total_points": self.get_rmse(pred=total_p, truth=total_r),
-            "mean_points_baseline": self.get_rmse(pred=18, truth=total_r),
+            "rand_points_baseline": self.get_rmse(pred=total_rand, truth=total_r),
         }
 
         return this_rmse_dict
