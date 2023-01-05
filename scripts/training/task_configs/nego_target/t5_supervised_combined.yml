@@ -49,7 +49,7 @@ train_evaluation:
         padding_side: right
         truncation_side: right
         pad_token_as_eos_token: False
-        max_length: 256
+        max_length: 512
     - id: target_format_and_rmse
     - id: bleu
       args: {}
