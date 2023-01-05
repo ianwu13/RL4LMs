@@ -671,6 +671,10 @@ class NegoTarget(TextGenPool):
                 elif dropout_type:
                     raise NotImplementedError
 
+                # remove the persona from the casino contexts.
+                if "food:" in context:
+                    context = NegoTarget.remove_persona(context)
+
                 target = item["response"] + " " + NegoTarget.EOU_TOKEN
 
                 if remove_walkaways:
@@ -688,6 +692,11 @@ class NegoTarget(TextGenPool):
 
         dp_instance = cls(samples)
         return dp_instance
+
+    @staticmethod
+    def remove_persona(context):
+        """remove persona statements from the context."""
+        return context
 
     @staticmethod
     def add_dropout(context, dropout_type, dropout_prob):

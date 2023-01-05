@@ -1031,10 +1031,10 @@ class TargetFormatAndRMSE(BaseMetric):
             "rmse_water": 0.0,
             "rmse_firewood": 0.0,
             "rmse_total_points": 0.0,
-            "mean_food_baseline": 0.0,
-            "mean_water_baseline": 0.0,
-            "mean_firewood_baseline": 0.0,
-            "mean_points_baseline": 0.0,
+            "rand_food_baseline": 0.0,
+            "rand_water_baseline": 0.0,
+            "rand_firewood_baseline": 0.0,
+            "rand_points_baseline": 0.0,
         }
 
         for prompt, pred, refs in zip(prompt_texts, generated_texts, reference_texts):
