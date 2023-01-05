@@ -471,7 +471,7 @@ class TargetQualityMetric(BaseMetric):
         model_points = []
 
         for prompt_txt, out_txt, max_point in zip(prompt_txts, out_txts, max_points):
-            if not TargetFormatAndRMSE.has_good_form(prompt_txt, out_txt):
+            if not TargetFormatAndMetrics.has_good_form(prompt_txt, out_txt):
                 model_points.append(max_point / 2)
                 continue
             
@@ -882,7 +882,7 @@ class SacreBLEUMetric(BaseMetric):
         metric_dict = {"lexical/sacrebleu": (None, bleu_score)}
         return metric_dict
 
-class TargetFormatAndRMSE(BaseMetric):
+class TargetFormatAndMetrics(BaseMetric):
     """
     Metric used for training the target model. This captures the RMSE and format checking to understand how the target model has been trained.
     """
@@ -963,13 +963,26 @@ class TargetFormatAndRMSE(BaseMetric):
 
         return True
 
-    def get_rmse(self, pred, truth):
+    @staticmethod
+    def get_rmse(pred, truth):
         """Compute rmse score. Technically, just compute the se over here. complete rmse will be computed above in the pipeline."""
 
         return (pred - truth)**2
 
-    def compute_rmses(self, pred, ref):
-        """Compute rmse values."""
+    @staticmethod
+    def get_acc(pred, truth, width):
+        """Get the accuracy +- of the width."""
+
+        allowed_min = truth - width
+        allowed_max = truth + width
+
+        if allowed_min <= pred <= allowed_max:
+            return 1.0
+        else:
+            return 0.0
+
+    def compute_metric_scores(self, pred, ref):
+        """Compute metric values."""
 
         pred_items = pred.split()
 
@@ -1002,18 +1015,45 @@ class TargetFormatAndRMSE(BaseMetric):
         f_rand, w_rand, fi_rand = random.choice([0,1,2,3]), random.choice([0,1,2,3]), random.choice([0,1,2,3])
         total_rand = f_rand*f_pref + w_rand*w_pref + fi_rand*fi_pref
 
-        this_rmse_dict = {
-            "rmse_food": self.get_rmse(pred=f_p, truth=f_r),
-            "rmse_water": self.get_rmse(pred=w_p, truth=w_r),
-            "rmse_firewood": self.get_rmse(pred=fi_p, truth=fi_r),
-            "rand_food_baseline": self.get_rmse(pred=f_rand, truth=f_r),
-            "rand_water_baseline": self.get_rmse(pred=w_rand, truth=w_r),
-            "rand_firewood_baseline": self.get_rmse(pred=fi_rand, truth=fi_r),
-            "rmse_total_points": self.get_rmse(pred=total_p, truth=total_r),
-            "rand_points_baseline": self.get_rmse(pred=total_rand, truth=total_r),
+        this_metric_dict = {
+            "rmse_food": TargetFormatAndMetrics.get_rmse(pred=f_p, truth=f_r),
+            "rmse_water": TargetFormatAndMetrics.get_rmse(pred=w_p, truth=w_r),
+            "rmse_firewood": TargetFormatAndMetrics.get_rmse(pred=fi_p, truth=fi_r),
+            "rmse_total_points": TargetFormatAndMetrics.get_rmse(pred=total_p, truth=total_r),
+
+            "acc_0_food": TargetFormatAndMetrics.get_acc(pred=f_p, truth=f_r, width=0),
+            "acc_0_water": TargetFormatAndMetrics.get_acc(pred=w_p, truth=w_r, width=0),
+            "acc_0_firewood": TargetFormatAndMetrics.get_acc(pred=fi_p, truth=fi_r, width=0),
+            "acc_0_total": TargetFormatAndMetrics.get_acc(pred=total_p, truth=total_r, width=0),
+            "acc_1_food": TargetFormatAndMetrics.get_acc(pred=f_p, truth=f_r, width=1),
+            "acc_1_water": TargetFormatAndMetrics.get_acc(pred=w_p, truth=w_r, width=1),
+            "acc_1_firewood": TargetFormatAndMetrics.get_acc(pred=fi_p, truth=fi_r, width=1),
+            "acc_1_total": TargetFormatAndMetrics.get_acc(pred=total_p, truth=total_r, width=1),
+            "acc_2_food": TargetFormatAndMetrics.get_acc(pred=f_p, truth=f_r, width=2),
+            "acc_2_water": TargetFormatAndMetrics.get_acc(pred=w_p, truth=w_r, width=2),
+            "acc_2_firewood": TargetFormatAndMetrics.get_acc(pred=fi_p, truth=fi_r, width=2),
+            "acc_2_total": TargetFormatAndMetrics.get_acc(pred=total_p, truth=total_r, width=2),
+
+            "rmse_food_rand": TargetFormatAndMetrics.get_rmse(pred=f_rand, truth=f_r),
+            "rmse_water_rand": TargetFormatAndMetrics.get_rmse(pred=w_rand, truth=w_r),
+            "rmse_firewood_rand": TargetFormatAndMetrics.get_rmse(pred=fi_rand, truth=fi_r),
+            "rmse_points_rand": TargetFormatAndMetrics.get_rmse(pred=total_rand, truth=total_r),
+
+            "acc_0_food_rand": TargetFormatAndMetrics.get_acc(pred=f_rand, truth=f_r, width=0),
+            "acc_0_water_rand": TargetFormatAndMetrics.get_acc(pred=w_rand, truth=w_r, width=0),
+            "acc_0_firewood_rand": TargetFormatAndMetrics.get_acc(pred=fi_rand, truth=fi_r, width=0),
+            "acc_0_total_rand": TargetFormatAndMetrics.get_acc(pred=total_rand, truth=total_r, width=0),
+            "acc_1_food_rand": TargetFormatAndMetrics.get_acc(pred=f_rand, truth=f_r, width=1),
+            "acc_1_water_rand": TargetFormatAndMetrics.get_acc(pred=w_rand, truth=w_r, width=1),
+            "acc_1_firewood_rand": TargetFormatAndMetrics.get_acc(pred=fi_rand, truth=fi_r, width=1),
+            "acc_1_total_rand": TargetFormatAndMetrics.get_acc(pred=total_rand, truth=total_r, width=1),
+            "acc_2_food_rand": TargetFormatAndMetrics.get_acc(pred=f_rand, truth=f_r, width=2),
+            "acc_2_water_rand": TargetFormatAndMetrics.get_acc(pred=w_rand, truth=w_r, width=2),
+            "acc_2_firewood_rand": TargetFormatAndMetrics.get_acc(pred=fi_rand, truth=fi_r, width=2),
+            "acc_2_total_rand": TargetFormatAndMetrics.get_acc(pred=total_rand, truth=total_r, width=2),
         }
 
-        return this_rmse_dict
+        return this_metric_dict
 
     def compute(
         self,
@@ -1026,20 +1066,45 @@ class TargetFormatAndRMSE(BaseMetric):
     ) -> Tuple[List[float], float]:
 
         good_forms = []
-        rmse_dict = {
+        metric_dict = {
             "rmse_food": 0.0,
             "rmse_water": 0.0,
             "rmse_firewood": 0.0,
             "rmse_total_points": 0.0,
-            "rand_food_baseline": 0.0,
-            "rand_water_baseline": 0.0,
-            "rand_firewood_baseline": 0.0,
-            "rand_points_baseline": 0.0,
+            "acc_0_food": 0.0,
+            "acc_0_water": 0.0,
+            "acc_0_firewood": 0.0,
+            "acc_0_total": 0.0,
+            "acc_1_food": 0.0,
+            "acc_1_water": 0.0,
+            "acc_1_firewood": 0.0,
+            "acc_1_total": 0.0,
+            "acc_2_food": 0.0,
+            "acc_2_water": 0.0,
+            "acc_2_firewood": 0.0,
+            "acc_2_total": 0.0,
+            "rmse_food_rand": 0.0,
+            "rmse_water_rand": 0.0,
+            "rmse_firewood_rand": 0.0,
+            "rmse_points_rand": 0.0,
+            "acc_0_food_rand": 0.0,
+            "acc_0_water_rand": 0.0,
+            "acc_0_firewood_rand": 0.0,
+            "acc_0_total_rand": 0.0,
+            "acc_1_food_rand": 0.0,
+            "acc_1_water_rand": 0.0,
+            "acc_1_firewood_rand": 0.0,
+            "acc_1_total_rand": 0.0,
+            "acc_2_food_rand": 0.0,
+            "acc_2_water_rand": 0.0,
+            "acc_2_firewood_rand": 0.0,
+            "acc_2_total_rand": 0.0,
+
         }
 
         for prompt, pred, refs in zip(prompt_texts, generated_texts, reference_texts):
 
-            if not TargetFormatAndRMSE.has_good_form(prompt, pred):
+            if not TargetFormatAndMetrics.has_good_form(prompt, pred):
                 good_forms.append(0)
                 continue
 
@@ -1047,29 +1112,34 @@ class TargetFormatAndRMSE(BaseMetric):
 
             ref = refs[0]
 
-            this_rmse_dict = self.compute_rmses(pred, ref)
+            this_metric_dict = self.compute_metric_scores(pred, ref)
 
-            for k in this_rmse_dict.keys():
-                rmse_dict[k] += this_rmse_dict[k]
+            for k in this_metric_dict.keys():
+                metric_dict[k] += this_metric_dict[k]
         
         good_form_acc = sum(good_forms) / len(generated_texts)
 
-        metric_dict = {
+        out_dict = {
             "nego_target/format_accuracy": (good_forms, good_form_acc),
             "nego_target/total_count": (None, len(generated_texts)),
             "nego_target/good_count": (None, sum(good_forms)),
             }
 
-        for k in rmse_dict.keys():
+        for k in metric_dict.keys():
             if sum(good_forms) > 0:
-                rmse_dict[k] = (rmse_dict[k] / sum(good_forms))**0.5
-                metric_dict[f"nego_target/{k}"] = (None, rmse_dict[k])
+
+                if "rmse" in k:
+                    metric_dict[k] = (metric_dict[k] / sum(good_forms))**0.5
+                    out_dict[f"nego_target/{k}"] = (None, metric_dict[k])
+                elif "acc_" in k:
+                    metric_dict[k] = metric_dict[k] / sum(good_forms)
+                    out_dict[f"nego_target/{k}"] = (None, metric_dict[k])
+                else:
+                    raise ValueError
             else:
-                metric_dict[f"nego_target/{k}"] = (None, -1)
+                out_dict[f"nego_target/{k}"] = (None, -1)
 
-        return metric_dict
-
-
+        return out_dict
 
 class TERMetric(BaseMetric):
     def __init__(self) -> None:

@@ -50,7 +50,7 @@ train_evaluation:
         truncation_side: right
         pad_token_as_eos_token: False
         max_length: 256
-    - id: target_format_and_rmse
+    - id: target_format_and_metrics
     - id: bleu
       args: {}
     - id: bert_score
