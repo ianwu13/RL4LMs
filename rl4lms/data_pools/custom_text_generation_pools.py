@@ -650,7 +650,8 @@ class NegoTarget(TextGenPool):
                 if has_utt not in context:
                     continue
 
-                if past_k != -1:
+                if past_k != -1 and "food:" in context:
+                    # only use it for casino instances.
                     utt_count = context.count("<you>") + context.count("<them>")
                     if utt_count < past_k:
                         # not possible to use this instance.

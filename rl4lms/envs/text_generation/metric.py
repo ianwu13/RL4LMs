@@ -918,8 +918,11 @@ class TargetFormatAndRMSE(BaseMetric):
         if f_ix == -1:
             return False
         
-        # get deal counts
-        f_c, w_c, fi_c = int(items[f_ix + 1][:-1]), int(items[f_ix + 3][:-1]), int(items[f_ix + 5][:-1])
+        try:
+            # get deal counts
+            f_c, w_c, fi_c = int(items[f_ix + 1][:-1]), int(items[f_ix + 3][:-1]), int(items[f_ix + 5][:-1])
+        except:
+            return False
         
         # get pref scores
         prompt_items = prompt.split()
@@ -942,16 +945,19 @@ class TargetFormatAndRMSE(BaseMetric):
         if items[f_ix + 12] != f"{fi_c}*{fi_p}":
             return False
 
-        if int(items[f_ix + 14]) != f_c*f_p:
-            return False
+        try:
+            if int(items[f_ix + 14]) != f_c*f_p:
+                return False
 
-        if int(items[f_ix + 16]) != w_c*w_p:
-            return False
+            if int(items[f_ix + 16]) != w_c*w_p:
+                return False
 
-        if int(items[f_ix + 18]) != fi_c*fi_p:
-            return False
-        
-        if int(items[f_ix + 20]) != (f_c*f_p + w_c*w_p + fi_c*fi_p):
+            if int(items[f_ix + 18]) != fi_c*fi_p:
+                return False
+            
+            if int(items[f_ix + 20]) != (f_c*f_p + w_c*w_p + fi_c*fi_p):
+                return False
+        except:
             return False
 
         return True

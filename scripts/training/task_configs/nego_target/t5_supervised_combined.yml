@@ -3,14 +3,14 @@ tokenizer:
   padding_side: right
   truncation_side: right
   pad_token_as_eos_token: False
-  max_length: 512
+  max_length: 256
 
 datapool:
   id: nego_target
   args:
     data_dirs: ["/project/glucas_540/kchawla/nego_rl/data/nego_target/casino/","/project/glucas_540/kchawla/nego_rl/data/nego_target/dealornodeal/"]
     min_yous: -1
-    past_k: 4 # min utts = k and only keep most recent k utterances. 
+    past_k: 4 # min utts = k and only keep most recent k utterances for casino (ignore for dnd) 
     has_utt: <history>
     remove_walkaways: True
     contain_offer: True # make sure that the set of four instance contains an offer info.
@@ -49,7 +49,7 @@ train_evaluation:
         padding_side: right
         truncation_side: right
         pad_token_as_eos_token: False
-        max_length: 512
+        max_length: 256
     - id: target_format_and_rmse
     - id: bleu
       args: {}
