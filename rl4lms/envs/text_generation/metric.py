@@ -510,15 +510,21 @@ class TargetQualityMetric(BaseMetric):
 
         return max_points
     
-    def extend_prompt(self, prompt_txt, new_txt):
-        """Extend the prompt with the new txt so as to compute the score with the new utterance."""
+    def extend_prompts(self, prompt_txts, new_txts):
+        """Extend the prompt with the new txt so as to compute the score with the new utterance. Filter out the bad ones."""
 
-        assert "<eou>" not in new_txt, new_txt
-        assert "<you>" in new_txt, new_txt
+        new_prompt_txts = []
+        for prompt_txt, new_txt in zip(prompt_texts, new_txts):
 
-        new_prompt_txt = prompt_txt.replace("<history>", f"<history> {new_txt}")
+            if "<eou>" in new_txt:
+                continue
+            if "<you>" not in new_txt:
+                continue
 
-        return new_prompt_txt
+            new_prompt_txt = prompt_txt.replace("<history>", f"<history> {new_txt}")
+            new_prompt_txts.append(new_prompt_txt)
+
+        return new_prompt_txts
 
     def handle_num_utts(self, prompts, past_k):
         """Filter and process based on the number of utterances."""
@@ -612,6 +618,7 @@ class TargetQualityMetric(BaseMetric):
 
         pred_scores, ref_scores = [], []
 
+        gen_bad_new_utt, ref_bad_new_utt = 0, 0
         gen_filtered, ref_filtered = 0, 0
         gen_form_errors, ref_form_errors = 0, 0
 
@@ -628,8 +635,15 @@ class TargetQualityMetric(BaseMetric):
                 current_ix : current_ix + self._batch_size
             ]
 
-            gen_prompts = [self.extend_prompt(prompt_txt, gen_txt) for prompt_txt, gen_txt in zip(batch_prompt_texts, batch_gen_texts)]
-            ref_prompts = [self.extend_prompt(prompt_txt, ref_txt) for prompt_txt, ref_txt in zip(batch_prompt_texts, batch_ref_texts)]
+            # extend the prompts with new utterances. Filter the ones where the new utts are not in the right format.
+            gen_prompts = self.extend_prompts(batch_prompt_texts, batch_gen_texts)
+            ref_prompts = self.extend_prompts(batch_prompt_texts, batch_ref_texts)
+
+            gen_bad_new_utt += (len(batch_gen_texts) - len(gen_prompts))
+            ref_bad_new_utt += (len(batch_ref_texts) - len(ref_prompts))
+
+            curr_len_gen = len(gen_prompts)
+            curr_len_ref = len(ref_prompts)
 
             # filter out if less than four utterances, process to only keep utterances, filter out if no offer info.
 
@@ -645,8 +659,8 @@ class TargetQualityMetric(BaseMetric):
             gen_prompts = self.handle_personas(gen_prompts)
             ref_prompts = self.handle_personas(ref_prompts)
 
-            gen_filtered += (len(batch_gen_texts) - len(gen_prompts))
-            ref_filtered += (len(batch_ref_texts) - len(ref_prompts))
+            gen_filtered += (curr_len_gen - len(gen_prompts))
+            ref_filtered += (curr_len_ref - len(ref_prompts))
 
             gen_encodings = self._tokenizer(
                 gen_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
@@ -691,7 +705,7 @@ class TargetQualityMetric(BaseMetric):
 
             current_ix += self._batch_size
         
-        assert len(generated_texts) == (len(pred_scores) + gen_filtered + gen_form_errors) == (len(ref_scores) + ref_filtered + ref_form_errors)
+        assert len(generated_texts) == (len(pred_scores) + gen_bad_new_utt + gen_filtered + gen_form_errors) == (len(ref_scores) + ref_bad_new_utt + ref_filtered + ref_form_errors)
         
         return {
             "target_metrics/gen_perf": (
@@ -706,6 +720,10 @@ class TargetQualityMetric(BaseMetric):
                 None,
                 len(generated_texts),
             ),
+            "target_metrics/gen_bad_new_utt": (
+                None,
+                gen_bad_new_utt,
+            ),
             "target_metrics/gen_filtered": (
                 None,
                 gen_filtered,
@@ -713,6 +731,10 @@ class TargetQualityMetric(BaseMetric):
             "target_metrics/gen_form_errors": (
                 None,
                 gen_form_errors,
+            ),
+            "target_metrics/ref_bad_new_utt": (
+                None,
+                ref_bad_new_utt,
             ),
             "target_metrics/ref_filtered": (
                 None,
