@@ -529,7 +529,7 @@ class TargetQualityMetric(BaseMetric):
                 continue
             if "them>" in new_txt:
                 continue
-            if "<you>" not in new_txt:
+            if new_txt.count("<you>") != 1:
                 continue
 
             new_prompt_txt = prompt_txt.replace("<history>", f"<history> {new_txt}")
