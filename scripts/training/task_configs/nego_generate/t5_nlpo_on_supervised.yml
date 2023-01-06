@@ -87,4 +87,3 @@ train_evaluation:
     min_length: 5
     max_new_tokens: 192
     no_repeat_ngram_size: 3
-    post_processing_fn: null
