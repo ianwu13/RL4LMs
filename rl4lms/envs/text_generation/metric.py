@@ -418,7 +418,7 @@ class TargetQualityMetric(BaseMetric):
     - This is a reference-free metric. So we will generate the score for both the model prediction and the ground-truth reference.
     - The metric essentially computes S(t) = M(t) / m
     
-    M(k) refers to the predicted total points by the trained target model, given the utterances from 1 to k. M(k) only takes in the dialogue histories that end in the YOU utterance.
+    M(k) refers to the predicted total points by the trained target model, given the utterances from 1 to k. M(k) only takes in the dialogue histories that end in the YOU utterance. Further constraints include keeping only past_k utterances, requires stuff that contains offer statements.
 
     m is the maximum possible score for that player (this formulation should work for both dealornodeal and CaSiNo).
 
@@ -432,7 +432,8 @@ class TargetQualityMetric(BaseMetric):
         padding_side: str = "right",
         truncation_side: str = "right",
         pad_token_as_eos_token: bool = False,
-        max_length: int = 512,
+        past_k: int = 4,
+        max_length: int = 256,
         do_sample:bool = True,
         top_k:int = 50,
         top_p:float = 0.6,
@@ -449,6 +450,7 @@ class TargetQualityMetric(BaseMetric):
         if self._tokenizer.pad_token is None and pad_token_as_eos_token:
             self._tokenizer.pad_token = self._tokenizer.eos_token
 
+        self._past_k = past_k
         self._max_length = max_length
         self._batch_size = 16
 
@@ -465,27 +467,22 @@ class TargetQualityMetric(BaseMetric):
         self._num_beams = num_beams
         self._max_new_tokens = max_new_tokens
 
-    def extract_model_points(self, prompt_txts, out_txts, max_points):
-        """Extract total points from generated texts. Return an avg score if the total could not be obtained. - half of max points may be."""
-        
-        model_points = []
+    def extract_model_points(self, prompt_txt, out_txt):
+        """Extract total points from generated text. Return None if the total could not be obtained."""
 
-        for prompt_txt, out_txt, max_point in zip(prompt_txts, out_txts, max_points):
-            if not TargetFormatAndMetrics.has_good_form(prompt_txt, out_txt):
-                model_points.append(max_point / 2)
-                continue
-            
-            items = out_txt.split()
-            f_ix = -1
-            for ix, item in enumerate(items):
-                if item == "food:":
-                    f_ix = ix
-                    break
-            
-            if f_ix == -1:
-                return False
-            
-            model_points.append(int(items[f_ix + 20]))
+        if not TargetFormatAndMetrics.has_good_form(prompt_txt, out_txt):
+            return None
+        
+        items = out_txt.split()
+        f_ix = -1
+        for ix, item in enumerate(items):
+            if item == "food:":
+                f_ix = ix
+                break
+        
+        assert f_ix != -1
+        
+        model_points = int(items[f_ix + 20])
         
         return model_points
 
@@ -494,7 +491,7 @@ class TargetQualityMetric(BaseMetric):
         
         max_points = []
         for prompt in prompt_txts:
-            # get pref scores
+            # get pref scores and counts
             prompt_items = prompt.split()
             prompt_f_ix = -1
             for ix, item in enumerate(prompt_items):
@@ -516,12 +513,80 @@ class TargetQualityMetric(BaseMetric):
     def extend_prompt(self, prompt_txt, new_txt):
         """Extend the prompt with the new txt so as to compute the score with the new utterance."""
 
-        assert "<eou>" not in new_txt
-        assert "<you>" in new_txt
+        assert "<eou>" not in new_txt, new_txt
+        assert "<you>" in new_txt, new_txt
 
         new_prompt_txt = prompt_txt.replace("<history>", f"<history> {new_txt}")
 
         return new_prompt_txt
+
+    def handle_num_utts(self, prompts, past_k):
+        """Filter and process based on the number of utterances."""
+        
+        new_prompts = []
+        for prompt in prompts:
+            if prompt.count("<you>") + prompt.count("<them>") < past_k:
+                continue
+
+            if prompt.count("<you>") + prompt.count("<them>") == past_k:
+                new_prompts.append(prompt)
+                continue
+
+            words = prompt.split()
+
+            found = 0
+            save = None
+            for ix, word in enumerate(words):
+                if word in ["<you>", "<them>"]:
+                    found += 1
+                
+                if found > past_k:
+                    # this is the start of (past_k + 1)th utterance. - we don't need stuff from here and to the right.
+                    save = ix
+                    break
+            
+            assert save
+            new_prompt = " ".join(words[:save])
+            new_prompts.append(new_prompt)
+        
+        return new_prompts
+
+    def handle_offer_info(self, prompts):
+        """Filter based on offer info."""
+        
+        disagree = ['no', 'not', "n't", 'nothing', 'dont', "nope", "don't", "unfair"]
+        agree = ['ok', 'okay', 'great', 'perfect', 'deal', 'that works', 'i can do that', 'sounds fair', 'sounds good', 'thanks']
+        offer_numbers = ['0', '1', '2', '3', 'one', 'two', 'three', 'all the', 'i get', 'you get', 'what if', 'i take', 'you can take', 'can do']
+        lexicon = disagree + agree + offer_numbers
+
+        new_prompts = []
+        for prompt in prompts:
+            if 'book:' in prompt or 'hat:' in prompt or 'ball:' in prompt:
+                # this is a DND instance. assume this is true.
+                new_prompts.append(prompt)
+                continue
+
+            history = prompt.split("<history>")[-1]
+
+            score = 0
+            for w in lexicon:
+                if(w in history):
+                    score += 1
+
+            if score >= 2:
+                # yes; this contains offer.
+                new_prompts.append(prompt)
+        return new_prompts
+
+    def handle_personas(self, prompts):
+        """Remove the personas from the prompts."""
+        
+        new_prompts = []
+        for prompt in prompts:
+            new_prompt = f'{prompt.split("<persona>")[0]}<persona> <history>{prompt.split("<history>")[-1]}'
+            new_prompts.append(new_prompt)
+        
+        return new_prompts
 
     def compute(
         self,
@@ -532,10 +597,23 @@ class TargetQualityMetric(BaseMetric):
         model: PreTrainedModel = None,
         split_name: str = None,
     ) -> Tuple[List[float], float]:
+        """
+        Create a new metric dimension for error cases. - like the total of cases which were ignored (due to less than four utts, no offer content, etc.) + cases for which the model messed up (wrong format). You could resample them if they are too many. But return the avg numbers for the rest.
+
+        Things to note
+         - past_k = 4 - keep 4 utterances exactly, remove instances where this is not possible.
+         - only those instances that cover offers.
+         - remove the persona info from the inputs.
+         - keep max length as 256.
+         - remove those cases where the output format is messed up.
+        """
         if split_name == "train":
             return {}
 
         pred_scores, ref_scores = [], []
+
+        gen_filtered, ref_filtered = 0, 0
+        gen_form_errors, ref_form_errors = 0, 0
 
         current_ix = 0
         n_texts = len(generated_texts)
@@ -553,6 +631,23 @@ class TargetQualityMetric(BaseMetric):
             gen_prompts = [self.extend_prompt(prompt_txt, gen_txt) for prompt_txt, gen_txt in zip(batch_prompt_texts, batch_gen_texts)]
             ref_prompts = [self.extend_prompt(prompt_txt, ref_txt) for prompt_txt, ref_txt in zip(batch_prompt_texts, batch_ref_texts)]
 
+            # filter out if less than four utterances, process to only keep utterances, filter out if no offer info.
+
+            # num utts - filter out and process.
+            gen_prompts = self.handle_num_utts(gen_prompts, self._past_k)
+            ref_prompts = self.handle_num_utts(ref_prompts, self._past_k)
+
+            # now each instance that remains contains exactly 4 utterances; now filter those without offer info.
+            gen_prompts = self.handle_offer_info(gen_prompts)
+            ref_prompts = self.handle_offer_info(ref_prompts)
+
+            #once we have the filtered outputs, remove personas from each of them.
+            gen_prompts = self.handle_personas(gen_prompts)
+            ref_prompts = self.handle_personas(ref_prompts)
+
+            gen_filtered += (len(batch_gen_texts) - len(gen_prompts))
+            ref_filtered += (len(batch_ref_texts) - len(ref_prompts))
+
             gen_encodings = self._tokenizer(
                 gen_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
             ).input_ids.to(self._device)
@@ -568,20 +663,35 @@ class TargetQualityMetric(BaseMetric):
             gen_dec = self._tokenizer.batch_decode(gen_outputs)
             ref_dec = self._tokenizer.batch_decode(ref_outputs)
 
-            max_points = self.extract_max_points(batch_prompt_texts)
+            gen_max_points = self.extract_max_points(gen_prompts)
+            ref_max_points = self.extract_max_points(ref_prompts)
 
-            gen_points = self.extract_model_points(batch_prompt_texts, gen_dec, max_points)
-            ref_points = self.extract_model_points(batch_prompt_texts, ref_dec, max_points)
+            this_pred_scores = []
+            for gen_in, gen_out, gen_max_point in zip(gen_prompts, gen_dec, gen_max_points):
+                this_points = self.extract_model_points(gen_in, gen_out)
+                if this_points:
+                    this_score = this_points / gen_max_point
+                    this_pred_scores.append(this_score)
+                else:
+                    # points could not be found.
+                    gen_form_errors += 1
 
-            assert type(max_points) == type(gen_points) == type(ref_points) == list
-            assert len(max_points) == len(gen_points) == len(ref_points) == len(batch_ref_texts)
+            this_ref_scores = []
+            for ref_in, ref_out, ref_max_point in zip(ref_prompts, ref_dec, ref_max_points):
+                this_points = self.extract_model_points(ref_in, ref_out)
+                if this_points:
+                    this_score = this_points / ref_max_point
+                    this_ref_scores.append(this_score)
+                else:
+                    # points could not be found.
+                    ref_form_errors += 1
 
-            pred_scores += [(gp / mp) for gp, mp in zip(gen_points, max_points)]
-            ref_scores += [(rp / mp) for rp, mp in zip(ref_points, max_points)]
+            pred_scores += this_pred_scores[:]
+            ref_scores += this_ref_scores[:]
 
             current_ix += self._batch_size
         
-        assert len(pred_scores) == len(ref_scores) == len(generated_texts)
+        assert len(generated_texts) == (len(pred_scores) + gen_filtered + gen_form_errors) == (len(ref_scores) + ref_filtered + ref_form_errors)
         
         return {
             "target_metrics/gen_perf": (
@@ -594,7 +704,23 @@ class TargetQualityMetric(BaseMetric):
             ),
             "target_metrics/total_count": (
                 None,
-                len(ref_scores),
+                len(generated_texts),
+            ),
+            "target_metrics/gen_filtered": (
+                None,
+                gen_filtered,
+            ),
+            "target_metrics/gen_form_errors": (
+                None,
+                gen_form_errors,
+            ),
+            "target_metrics/ref_filtered": (
+                None,
+                ref_filtered,
+            ),
+            "target_metrics/ref_form_errors": (
+                None,
+                ref_form_errors,
             ),
         }
 

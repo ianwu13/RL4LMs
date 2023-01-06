@@ -8,7 +8,7 @@ tokenizer:
 datapool:
   id: nego_dialog
   args:
-    data_dirs: ["/project/glucas_540/kchawla/nego_rl/data/sup_gen/casino"]
+    data_dirs: ["/project/glucas_540/kchawla/nego_rl/data/sup_gen/casino", "/project/glucas_540/kchawla/nego_rl/data/sup_gen/dealornodeal", "/project/glucas_540/kchawla/nego_rl/data/sup_gen/personachat"]
 
 alg:
   id: supervised

@@ -11,12 +11,12 @@ from rl4lms.data_pools.custom_text_generation_pools import (
     IMDB,
     WMT,
     CNNDailyMail,
-    CaSiNoDialog,
     CommonGen,
     CRD3DialogueGeneration,
     IMDBForSeq2Seq,
     IWSLT2017EnDe,
     NarrativeQA,
+    NegoDialog,
     NegoTarget,
     ToTTo,
     WMT14PreprocessedEnDe,
@@ -103,7 +103,7 @@ class DataPoolRegistry:
         "iwslt2017en_de": IWSLT2017EnDe,
         "crd3": CRD3DialogueGeneration,
         "daily_dialog": DailyDialog,
-        "casino": CaSiNoDialog,
+        "nego_dialog": NegoDialog,
         "nego_target": NegoTarget,
     }
 

@@ -581,30 +581,43 @@ class DailyDialog(TextGenPool):
         dp_instance = cls(samples)
         return dp_instance
 
-class CaSiNoDialog(TextGenPool):
+class NegoDialog(TextGenPool):
     EOU_TOKEN = "<EOU>"
     @classmethod
-    def prepare(cls, split: str, processed_data_dir: str):
+    def prepare(
+        cls,
+        split: str,
+        data_dirs: str,
+        ):
         split = CommonGen.gen_split_name(split)
-        
-        if split in ["train", "test"]:
-            dat_path = os.path.join(processed_data_dir, f"{split}.csv")
-        elif split == "validation":
-            dat_path = os.path.join(processed_data_dir, "eval.csv")
-        else:
-            raise ValueError
 
-        dataset = load_dataset("csv", data_files={f"casino_{split}": dat_path})
         samples = []
-        for ix, item in enumerate(dataset[f"casino_{split}"]):
+        offset = 0
+        for data_dir in data_dirs:
+            
+            if split in ["validation", "test"]:
+                if "casino" not in data_dir:
+                    continue
+        
+            if split in ["train", "test"]:
+                dat_path = os.path.join(data_dir, f"{split}.csv")
+            elif split == "validation":
+                dat_path = os.path.join(data_dir, "eval.csv")
+            else:
+                raise ValueError
 
-            context = item["input_seq"]
-            target = item["response"] + " " + CaSiNoDialog.EOU_TOKEN            
-            sample = Sample(id=ix, 
-                            prompt_or_input_text=context, 
-                            references=[target],
-                            )
-            samples.append(sample)
+            dataset = load_dataset("csv", data_files={f"dat_{split}": dat_path})
+            for ix, item in enumerate(dataset[f"dat_{split}"]):
+
+                context = item["input_seq"]
+                target = item["response"] + " " + NegoDialog.EOU_TOKEN            
+                sample = Sample(id=offset + ix, 
+                                prompt_or_input_text=context, 
+                                references=[target],
+                                )
+                samples.append(sample)
+            
+            offset = len(samples)
 
         dp_instance = cls(samples)
         return dp_instance
