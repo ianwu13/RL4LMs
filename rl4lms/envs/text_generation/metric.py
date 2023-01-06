@@ -514,7 +514,7 @@ class TargetQualityMetric(BaseMetric):
         """Extend the prompt with the new txt so as to compute the score with the new utterance. Filter out the bad ones."""
 
         new_prompt_txts = []
-        for prompt_txt, new_txt in zip(prompt_texts, new_txts):
+        for prompt_txt, new_txt in zip(prompt_txts, new_txts):
 
             if "<eou>" in new_txt:
                 continue
