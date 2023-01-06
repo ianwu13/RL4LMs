@@ -662,46 +662,52 @@ class TargetQualityMetric(BaseMetric):
             gen_filtered += (curr_len_gen - len(gen_prompts))
             ref_filtered += (curr_len_ref - len(ref_prompts))
 
-            gen_encodings = self._tokenizer(
-                gen_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
-            ).input_ids.to(self._device)
-            ref_encodings = self._tokenizer(
-                ref_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
-            ).input_ids.to(self._device)
+            if gen_prompts:
+                gen_encodings = self._tokenizer(
+                    gen_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
+                ).input_ids.to(self._device)
 
-            with torch.no_grad():
-                gen_outputs = model.generate(gen_encodings, do_sample=self._do_sample, top_k=self._top_k, top_p=self._top_p, min_length=self._min_length, num_beams=self._num_beams, max_new_tokens=self._max_new_tokens)
+                with torch.no_grad():
+                    gen_outputs = model.generate(gen_encodings, do_sample=self._do_sample, top_k=self._top_k, top_p=self._top_p, min_length=self._min_length, num_beams=self._num_beams, max_new_tokens=self._max_new_tokens)
 
-                ref_outputs = model.generate(ref_encodings, do_sample=self._do_sample, top_k=self._top_k, top_p=self._top_p, min_length=self._min_length, num_beams=self._num_beams, max_new_tokens=self._max_new_tokens)
+                gen_dec = self._tokenizer.batch_decode(gen_outputs)
 
-            gen_dec = self._tokenizer.batch_decode(gen_outputs)
-            ref_dec = self._tokenizer.batch_decode(ref_outputs)
+                gen_max_points = self.extract_max_points(gen_prompts)
 
-            gen_max_points = self.extract_max_points(gen_prompts)
-            ref_max_points = self.extract_max_points(ref_prompts)
+                this_pred_scores = []
+                for gen_in, gen_out, gen_max_point in zip(gen_prompts, gen_dec, gen_max_points):
+                    this_points = self.extract_model_points(gen_in, gen_out)
+                    if this_points:
+                        this_score = this_points / gen_max_point
+                        this_pred_scores.append(this_score)
+                    else:
+                        # points could not be found.
+                        gen_form_errors += 1
 
-            this_pred_scores = []
-            for gen_in, gen_out, gen_max_point in zip(gen_prompts, gen_dec, gen_max_points):
-                this_points = self.extract_model_points(gen_in, gen_out)
-                if this_points:
-                    this_score = this_points / gen_max_point
-                    this_pred_scores.append(this_score)
-                else:
-                    # points could not be found.
-                    gen_form_errors += 1
+                pred_scores += this_pred_scores[:]
 
-            this_ref_scores = []
-            for ref_in, ref_out, ref_max_point in zip(ref_prompts, ref_dec, ref_max_points):
-                this_points = self.extract_model_points(ref_in, ref_out)
-                if this_points:
-                    this_score = this_points / ref_max_point
-                    this_ref_scores.append(this_score)
-                else:
-                    # points could not be found.
-                    ref_form_errors += 1
+            if ref_prompts:
+                ref_encodings = self._tokenizer(
+                    ref_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
+                ).input_ids.to(self._device)
 
-            pred_scores += this_pred_scores[:]
-            ref_scores += this_ref_scores[:]
+                with torch.no_grad():
+                    ref_outputs = model.generate(ref_encodings, do_sample=self._do_sample, top_k=self._top_k, top_p=self._top_p, min_length=self._min_length, num_beams=self._num_beams, max_new_tokens=self._max_new_tokens)
+
+                ref_dec = self._tokenizer.batch_decode(ref_outputs)
+                ref_max_points = self.extract_max_points(ref_prompts)
+
+                this_ref_scores = []
+                for ref_in, ref_out, ref_max_point in zip(ref_prompts, ref_dec, ref_max_points):
+                    this_points = self.extract_model_points(ref_in, ref_out)
+                    if this_points:
+                        this_score = this_points / ref_max_point
+                        this_ref_scores.append(this_score)
+                    else:
+                        # points could not be found.
+                        ref_form_errors += 1
+
+                ref_scores += this_ref_scores[:]
 
             current_ix += self._batch_size
         
