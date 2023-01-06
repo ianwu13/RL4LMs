@@ -471,6 +471,7 @@ class TargetQualityMetric(BaseMetric):
         """Extract total points from generated text. Return None if the total could not be obtained."""
 
         if not TargetFormatAndMetrics.has_good_form(prompt_txt, out_txt):
+            print("BAD FORM HERE: ", prompt_txt, out_txt)
             return None
         
         items = out_txt.split()
