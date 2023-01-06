@@ -528,15 +528,15 @@ class TargetQualityMetric(BaseMetric):
 
         return new_prompt_txts
 
-    def handle_num_utts(self, prompts, past_k):
+    def handle_num_utts(self, prompts):
         """Filter and process based on the number of utterances."""
         
         new_prompts = []
         for prompt in prompts:
-            if prompt.count("<you>") + prompt.count("<them>") < past_k:
+            if prompt.count("<you>") + prompt.count("<them>") < self._past_k:
                 continue
 
-            if prompt.count("<you>") + prompt.count("<them>") == past_k:
+            if prompt.count("<you>") + prompt.count("<them>") == self._past_k:
                 new_prompts.append(prompt)
                 continue
 
@@ -548,12 +548,12 @@ class TargetQualityMetric(BaseMetric):
                 if word in ["<you>", "<them>"]:
                     found += 1
                 
-                if found > past_k:
+                if found > self._past_k:
                     # this is the start of (past_k + 1)th utterance. - we don't need stuff from here and to the right.
                     save = ix
                     break
             
-            assert save
+            assert save, f"{prompt}"
             new_prompt = " ".join(words[:save])
             new_prompts.append(new_prompt)
         
@@ -650,8 +650,8 @@ class TargetQualityMetric(BaseMetric):
             # filter out if less than four utterances, process to only keep utterances, filter out if no offer info.
 
             # num utts - filter out and process.
-            gen_prompts = self.handle_num_utts(gen_prompts, self._past_k)
-            ref_prompts = self.handle_num_utts(ref_prompts, self._past_k)
+            gen_prompts = self.handle_num_utts(gen_prompts)
+            ref_prompts = self.handle_num_utts(ref_prompts)
 
             # now each instance that remains contains exactly 4 utterances; now filter those without offer info.
             gen_prompts = self.handle_offer_info(gen_prompts)
