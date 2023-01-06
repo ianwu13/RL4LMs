@@ -457,7 +457,7 @@ class TargetQualityMetric(BaseMetric):
         self._device = f"cuda:{torch.cuda.device_count() - 1}" if torch.cuda.is_available() else "cpu"
 
         # set up the model
-        self._model = AutoModelForSeq2SeqLM.from_pretrained(target_model_dir).to(self._device)
+        self._target_model = AutoModelForSeq2SeqLM.from_pretrained(target_model_dir).to(self._device)
 
         # set up generation params
         self._do_sample = do_sample
@@ -528,6 +528,8 @@ class TargetQualityMetric(BaseMetric):
             if "persona>" in new_txt:
                 continue
             if "them>" in new_txt:
+                continue
+            if ">" in new_txt.replace("<you>",""):
                 continue
             if new_txt.count("<you>") != 1:
                 continue
@@ -679,7 +681,7 @@ class TargetQualityMetric(BaseMetric):
                 ).input_ids.to(self._device)
 
                 with torch.no_grad():
-                    gen_outputs = model.generate(gen_encodings, do_sample=self._do_sample, top_k=self._top_k, top_p=self._top_p, min_length=self._min_length, num_beams=self._num_beams, max_new_tokens=self._max_new_tokens)
+                    gen_outputs = self._target_model.generate(gen_encodings, do_sample=self._do_sample, top_k=self._top_k, top_p=self._top_p, min_length=self._min_length, num_beams=self._num_beams, max_new_tokens=self._max_new_tokens)
 
                 gen_dec = self._tokenizer.batch_decode(gen_outputs, skip_special_tokens=True)
 
@@ -703,17 +705,17 @@ class TargetQualityMetric(BaseMetric):
                 ).input_ids.to(self._device)
 
                 with torch.no_grad():
-                    ref_outputs = model.generate(ref_encodings, do_sample=self._do_sample, top_k=self._top_k, top_p=self._top_p, min_length=self._min_length, num_beams=self._num_beams, max_new_tokens=self._max_new_tokens)
+                    ref_outputs = self._target_model.generate(ref_encodings, do_sample=self._do_sample, top_k=self._top_k, top_p=self._top_p, min_length=self._min_length, num_beams=self._num_beams, max_new_tokens=self._max_new_tokens)
 
                 ref_dec = self._tokenizer.batch_decode(ref_outputs, skip_special_tokens=True)
 
-                print("PRINT I/O here", "-"*40)
-                for inn, outt in zip(ref_prompts, ref_dec):
-                    print("Input: ", inn)
-                    print("-"*5)
-                    print("Output: ", outt)
-                    print("-"*10)
-                print("-"*50)
+                # print("PRINT I/O here", "-"*40)
+                # for inn, outt in zip(ref_prompts, ref_dec):
+                #     print("Input: ", inn)
+                #     print("-"*5)
+                #     print("Output: ", outt)
+                #     print("-"*10)
+                # print("-"*50)
 
                 ref_max_points = self.extract_max_points(ref_prompts)
 
