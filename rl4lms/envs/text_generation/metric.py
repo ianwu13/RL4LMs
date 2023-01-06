@@ -471,7 +471,6 @@ class TargetQualityMetric(BaseMetric):
         """Extract total points from generated text. Return None if the total could not be obtained."""
 
         if not TargetFormatAndMetrics.has_good_form(prompt_txt, out_txt):
-            print("BAD FORM HERE: ", prompt_txt, out_txt)
             return None
         
         items = out_txt.split()
@@ -682,7 +681,7 @@ class TargetQualityMetric(BaseMetric):
                 with torch.no_grad():
                     gen_outputs = model.generate(gen_encodings, do_sample=self._do_sample, top_k=self._top_k, top_p=self._top_p, min_length=self._min_length, num_beams=self._num_beams, max_new_tokens=self._max_new_tokens)
 
-                gen_dec = self._tokenizer.batch_decode(gen_outputs)
+                gen_dec = self._tokenizer.batch_decode(gen_outputs, skip_special_tokens=True)
 
                 gen_max_points = self.extract_max_points(gen_prompts)
 
@@ -706,7 +705,16 @@ class TargetQualityMetric(BaseMetric):
                 with torch.no_grad():
                     ref_outputs = model.generate(ref_encodings, do_sample=self._do_sample, top_k=self._top_k, top_p=self._top_p, min_length=self._min_length, num_beams=self._num_beams, max_new_tokens=self._max_new_tokens)
 
-                ref_dec = self._tokenizer.batch_decode(ref_outputs)
+                ref_dec = self._tokenizer.batch_decode(ref_outputs, skip_special_tokens=True)
+
+                print("PRINT I/O here", "-"*40)
+                for inn, outt in zip(ref_prompts, ref_dec):
+                    print("Input: ", inn)
+                    print("-"*5)
+                    print("Output: ", outt)
+                    print("-"*10)
+                print("-"*50)
+
                 ref_max_points = self.extract_max_points(ref_prompts)
 
                 this_ref_scores = []
