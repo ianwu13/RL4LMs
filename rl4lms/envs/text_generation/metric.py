@@ -516,7 +516,12 @@ class TargetQualityMetric(BaseMetric):
         new_prompt_txts = []
         for prompt_txt, new_txt in zip(prompt_txts, new_txts):
             
-            new_txt = new_txt.replace("<START-1>", "").replace("<END-1>", "").replace("<EOU>", "").replace("EOU>", "").replace("you>","<you>").strip()
+            new_txt = new_txt.replace("<START-1>", "").replace("<END-1>", "").replace("<EOU>", "").replace("EOU>", "")
+            
+            if "<you>" not in new_txt and "you>" in new_txt:
+                new_txt = new_txt.replace("you>","<you>")
+
+            new_txt = new_txt.strip()
 
             if "EOU" in new_txt:
                 continue
