@@ -525,6 +525,10 @@ class TargetQualityMetric(BaseMetric):
 
             if "EOU" in new_txt:
                 continue
+            if "persona>" in new_txt:
+                continue
+            if "them>" in new_txt:
+                continue
             if "<you>" not in new_txt:
                 continue
 
