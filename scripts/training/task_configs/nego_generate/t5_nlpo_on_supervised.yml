@@ -9,9 +9,9 @@ reward_fn:
   id: meteor
 
 datapool:
-  id: casino
+  id: nego_dialog
   args:
-    processed_data_dir: "/project/glucas_540/kchawla/nego_control_f22/base_model/data/casino/"
+    data_dirs: ["/project/glucas_540/kchawla/nego_rl/data/sup_gen/casino"]
 
 env:
   n_envs: 10
@@ -37,7 +37,7 @@ alg:
   policy:
     id: maskable_seq2seq_lm_actor_critic_policy
     args:
-      model_name: PATH_TO_SUPERVISED_MODEL
+      model_name: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_gen_sup1/model/"
       prompt_truncation_side: "right"
       apply_model_parallel: True
       top_mask: 0.9
@@ -59,6 +59,18 @@ train_evaluation:
     - id: meteor
       args: {}
     - id: rouge
+    - id: seq2seq_perplexity
+      args:
+        model_type: seq2seq
+        tokenizer_id: t5-base
+        padding_side: right
+        truncation_side: right
+        pad_token_as_eos_token: False
+        max_length: 512
+    - id: target_quality
+      args:
+        tokenizer_id: t5-base
+        target_model_dir: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_target_sup_comb_lr1e4_rw_k4_co_l256_rand_nopers_accs/model/"
     - id: bleu
       args: {}
     - id: bert_score
