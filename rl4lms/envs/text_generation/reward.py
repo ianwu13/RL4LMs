@@ -13,6 +13,7 @@ from rl4lms.envs.text_generation.metric import (
     ParentToTTo,
     RougeLMax,
     TERMetric,
+    TargetQualityMetric,
     chrFmetric,
     IntentAccuracyDailyDialog,
 )
@@ -551,6 +552,62 @@ class chrF(RewardFunction):
             score = metric_dict["lexical/chrf"][1]
             return score
         return 0
+
+
+class TargetQualityRewardFunction(BatchedRewardFunction):
+    def __init__(
+        self,
+        tokenizer_id: str,
+        target_model_dir: str,
+    ) -> None:
+        super().__init__()
+
+        self._metric = TargetQualityMetric(
+            tokenizer_id=tokenizer_id,
+            target_model_dir=target_model_dir,
+        )
+
+    def __call__(
+        self,
+        prompt_texts: List[str],
+        gen_texts: List[str],
+        ref_texts: List[List[str]],
+        dones: List[bool],
+        meta_infos: List[Dict[str, Any]] = None,
+    ) -> List[float]:
+
+        if self._metric is None:
+            self._metric = IntentAccuracyDailyDialog()
+
+        # compute rewards for finished episodes only
+        rewards = np.zeros(len(gen_texts))
+
+        done_prompt_texts = []
+        done_gen_texts = []
+        done_ref_texts = []
+        done_meta_infos = []
+        done_ixs = []
+        for ix, (prompt, gen, ref, meta_info, done) in enumerate(
+            zip(prompt_texts, gen_texts, ref_texts, meta_infos, dones)
+        ):
+            if done:
+                done_prompt_texts.append(prompt)
+                done_gen_texts.append(gen)
+                done_ref_texts.append(ref)
+                done_meta_infos.append(meta_info)
+                done_ixs.append(ix)
+
+                if self._shape:
+                    score = self._shaping_metric.compute(
+                        done_prompt_texts, done_gen_texts, done_ref_texts
+                    )
+                    rewards[ix] = self._auto_coeff * score["lexical/meteor"][1]
+
+        scores = self._metric.compute(
+            done_prompt_texts, done_gen_texts, done_ref_texts, done_meta_infos
+        )["intent/accuracy"][0]
+        rewards[done_ixs] += self._intent_coeff * np.array(scores)
+        return rewards.tolist()
 
 
 class IntentAccuracy(BatchedRewardFunction):

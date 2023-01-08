@@ -32,8 +32,8 @@ alg:
     n_epochs: 5
 
   kl_div:
-    coeff: 0.2
-    target_kl: 0.05
+    coeff: 0.001
+    target_kl: 0.002
   policy:
     id: maskable_seq2seq_lm_actor_critic_policy
     args:
