@@ -576,9 +576,6 @@ class TargetQualityRewardFunction(BatchedRewardFunction):
         meta_infos: List[Dict[str, Any]] = None,
     ) -> List[float]:
 
-        if self._metric is None:
-            self._metric = IntentAccuracyDailyDialog()
-
         # compute rewards for finished episodes only
         rewards = np.zeros(len(gen_texts))
 
@@ -597,16 +594,11 @@ class TargetQualityRewardFunction(BatchedRewardFunction):
                 done_meta_infos.append(meta_info)
                 done_ixs.append(ix)
 
-                if self._shape:
-                    score = self._shaping_metric.compute(
-                        done_prompt_texts, done_gen_texts, done_ref_texts
-                    )
-                    rewards[ix] = self._auto_coeff * score["lexical/meteor"][1]
-
         scores = self._metric.compute(
             done_prompt_texts, done_gen_texts, done_ref_texts, done_meta_infos
-        )["intent/accuracy"][0]
-        rewards[done_ixs] += self._intent_coeff * np.array(scores)
+        )["target_metrics/gen_perf"][0]
+        assert len(scores) == len(done_prompt_texts) == len(done_ixs)
+        rewards[done_ixs] += np.array(scores)
         return rewards.tolist()
 
 

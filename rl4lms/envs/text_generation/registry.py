@@ -76,6 +76,7 @@ from rl4lms.envs.text_generation.reward import (
     RougeRewardFunction,
     SacreBleu,
     SpiderRewardFunction,
+    TargetQualityRewardFunction,
     chrF,
     IntentAccuracy,
 )
@@ -139,6 +140,7 @@ class RewardFunctionRegistry:
         "chrf": chrF,
         "intent_accuracy": IntentAccuracy,
         "common_gen_preference_model": CommonGenPrefRM,
+        "target_quality_reward": TargetQualityRewardFunction,
     }
 
     @classmethod

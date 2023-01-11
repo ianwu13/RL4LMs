@@ -524,18 +524,25 @@ class TargetQualityMetric(BaseMetric):
             new_txt = new_txt.strip()
 
             if "EOU" in new_txt:
+                new_prompt_txts.append(None)
                 continue
             if "persona>" in new_txt:
+                new_prompt_txts.append(None)
                 continue
             if "them>" in new_txt:
+                new_prompt_txts.append(None)
                 continue
             if ">" in new_txt.replace("<you>",""):
+                new_prompt_txts.append(None)
                 continue
             if new_txt.count("<you>") != 1:
+                new_prompt_txts.append(None)
                 continue
 
             new_prompt_txt = prompt_txt.replace("<history>", f"<history> {new_txt}")
             new_prompt_txts.append(new_prompt_txt)
+
+        assert len(new_prompt_txts) == len(prompt_txts) == len(new_txts)
 
         return new_prompt_txts
 
@@ -544,7 +551,12 @@ class TargetQualityMetric(BaseMetric):
         
         new_prompts = []
         for prompt in prompts:
+            if not prompt:
+                new_prompts.append(prompt)
+                continue
+
             if prompt.count("<you>") + prompt.count("<them>") < self._past_k:
+                new_prompts.append(None)
                 continue
 
             if prompt.count("<you>") + prompt.count("<them>") == self._past_k:
@@ -567,7 +579,8 @@ class TargetQualityMetric(BaseMetric):
             assert save, f"{prompt}"
             new_prompt = " ".join(words[:save])
             new_prompts.append(new_prompt)
-        
+
+        assert len(new_prompts) == len(prompts)
         return new_prompts
 
     def handle_offer_info(self, prompts):
@@ -580,6 +593,10 @@ class TargetQualityMetric(BaseMetric):
 
         new_prompts = []
         for prompt in prompts:
+            if not prompt:
+                new_prompts.append(prompt)
+                continue
+
             if 'book:' in prompt or 'hat:' in prompt or 'ball:' in prompt:
                 # this is a DND instance. assume this is true.
                 new_prompts.append(prompt)
@@ -595,6 +612,10 @@ class TargetQualityMetric(BaseMetric):
             if score >= 2:
                 # yes; this contains offer.
                 new_prompts.append(prompt)
+            else:
+                new_prompts.append(None)
+            
+        assert len(new_prompts) == len(prompts)
         return new_prompts
 
     def handle_personas(self, prompts):
@@ -602,9 +623,13 @@ class TargetQualityMetric(BaseMetric):
         
         new_prompts = []
         for prompt in prompts:
+            if not prompt:
+                new_prompts.append(prompt)
+                continue
             new_prompt = f'{prompt.split("<persona>")[0]}<persona> <history>{prompt.split("<history>")[-1]}'
             new_prompts.append(new_prompt)
         
+        assert len(new_prompts) == len(prompts)
         return new_prompts
 
     def compute(
@@ -629,6 +654,8 @@ class TargetQualityMetric(BaseMetric):
         if split_name == "train":
             return {}
 
+        assert len(generated_texts) == len(reference_texts) == len(prompt_texts)
+
         pred_scores, ref_scores = [], []
 
         gen_bad_new_utt, ref_bad_new_utt = 0, 0
@@ -648,15 +675,22 @@ class TargetQualityMetric(BaseMetric):
                 current_ix : current_ix + self._batch_size
             ]
 
+            batch_pred_scores = [0.5 for _ in range(len(batch_gen_texts))]
+            batch_ref_scores = [0.5 for _ in range(len(batch_ref_texts))]
+
             # extend the prompts with new utterances. Filter the ones where the new utts are not in the right format.
             gen_prompts = self.extend_prompts(batch_prompt_texts, batch_gen_texts)
             ref_prompts = self.extend_prompts(batch_prompt_texts, batch_ref_texts)
 
-            gen_bad_new_utt += (len(batch_gen_texts) - len(gen_prompts))
-            ref_bad_new_utt += (len(batch_ref_texts) - len(ref_prompts))
-
-            curr_len_gen = len(gen_prompts)
-            curr_len_ref = len(ref_prompts)
+            batch_gen_bad_new_utt = 0
+            for item in gen_prompts:
+                if not item:
+                    batch_gen_bad_new_utt += 1
+            
+            batch_ref_bad_new_utt = 0
+            for item in ref_prompts:
+                if not item:
+                    batch_ref_bad_new_utt += 1
 
             # filter out if less than four utterances, process to only keep utterances, filter out if no offer info.
 
@@ -672,12 +706,27 @@ class TargetQualityMetric(BaseMetric):
             gen_prompts = self.handle_personas(gen_prompts)
             ref_prompts = self.handle_personas(ref_prompts)
 
-            gen_filtered += (curr_len_gen - len(gen_prompts))
-            ref_filtered += (curr_len_ref - len(ref_prompts))
+            batch_gen_filtered = 0
+            for item in gen_prompts:
+                if not item:
+                    batch_gen_filtered += 1
+            batch_gen_filtered -= batch_gen_bad_new_utt
 
-            if gen_prompts:
+            batch_ref_filtered = 0
+            for item in ref_prompts:
+                if not item:
+                    batch_ref_filtered += 1
+            batch_ref_filtered -= batch_ref_bad_new_utt
+            
+            gen_good_ixs, gen_good_prompts = [], []
+            for ix, item in enumerate(gen_prompts):
+                if item:
+                    gen_good_ixs.append(ix)
+                    gen_good_prompts.append(item)
+
+            if gen_good_prompts:
                 gen_encodings = self._tokenizer(
-                    gen_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
+                    gen_good_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
                 ).input_ids.to(self._device)
 
                 with torch.no_grad():
@@ -685,23 +734,34 @@ class TargetQualityMetric(BaseMetric):
 
                 gen_dec = self._tokenizer.batch_decode(gen_outputs, skip_special_tokens=True)
 
-                gen_max_points = self.extract_max_points(gen_prompts)
+                gen_max_points = self.extract_max_points(gen_good_prompts)
 
-                this_pred_scores = []
-                for gen_in, gen_out, gen_max_point in zip(gen_prompts, gen_dec, gen_max_points):
+                this_good_pred_scores = []
+                batch_gen_form_errors = 0
+                assert len(gen_good_prompts) == len(gen_dec) == len(gen_max_points)
+                for gen_in, gen_out, gen_max_point in zip(gen_good_prompts, gen_dec, gen_max_points):
                     this_points = self.extract_model_points(gen_in, gen_out)
                     if this_points:
                         this_score = this_points / gen_max_point
-                        this_pred_scores.append(this_score)
+                        this_good_pred_scores.append(this_score)
                     else:
                         # points could not be found.
-                        gen_form_errors += 1
+                        this_good_pred_scores.append(0.5)
+                        batch_gen_form_errors += 1
 
-                pred_scores += this_pred_scores[:]
+                assert len(gen_good_ixs) == len(this_good_pred_scores) == len(gen_good_prompts)
+                for ii in range(len(gen_good_ixs)):
+                    batch_pred_scores[gen_good_ixs[ii]] = this_good_pred_scores[ii]
 
-            if ref_prompts:
+            ref_good_ixs, ref_good_prompts = [], []
+            for ix, item in enumerate(ref_prompts):
+                if item:
+                    ref_good_ixs.append(ix)
+                    ref_good_prompts.append(item)
+
+            if ref_good_prompts:
                 ref_encodings = self._tokenizer(
-                    ref_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
+                    ref_good_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
                 ).input_ids.to(self._device)
 
                 with torch.no_grad():
@@ -709,39 +769,45 @@ class TargetQualityMetric(BaseMetric):
 
                 ref_dec = self._tokenizer.batch_decode(ref_outputs, skip_special_tokens=True)
 
-                # print("PRINT I/O here", "-"*40)
-                # for inn, outt in zip(ref_prompts, ref_dec):
-                #     print("Input: ", inn)
-                #     print("-"*5)
-                #     print("Output: ", outt)
-                #     print("-"*10)
-                # print("-"*50)
+                ref_max_points = self.extract_max_points(ref_good_prompts)
 
-                ref_max_points = self.extract_max_points(ref_prompts)
-
-                this_ref_scores = []
-                for ref_in, ref_out, ref_max_point in zip(ref_prompts, ref_dec, ref_max_points):
+                this_good_ref_scores = []
+                batch_ref_form_errors = 0
+                assert len(ref_good_prompts) == len(ref_dec) == len(ref_max_points)
+                for ref_in, ref_out, ref_max_point in zip(ref_good_prompts, ref_dec, ref_max_points):
                     this_points = self.extract_model_points(ref_in, ref_out)
                     if this_points:
                         this_score = this_points / ref_max_point
-                        this_ref_scores.append(this_score)
+                        this_good_ref_scores.append(this_score)
                     else:
                         # points could not be found.
-                        ref_form_errors += 1
+                        this_good_ref_scores.append(0.5)
+                        batch_ref_form_errors += 1
 
-                ref_scores += this_ref_scores[:]
+                assert len(ref_good_ixs) == len(this_good_ref_scores) == len(ref_good_prompts)
+                for ii in range(len(ref_good_ixs)):
+                    batch_ref_scores[ref_good_ixs[ii]] = this_good_ref_scores[ii]
 
+            # UPDATE OTHER THINGS
+            pred_scores += batch_pred_scores[:]
+            ref_scores += batch_ref_scores[:]
+            gen_bad_new_utt += batch_gen_bad_new_utt
+            ref_bad_new_utt += batch_ref_bad_new_utt
+            gen_filtered += batch_gen_filtered
+            ref_filtered += batch_ref_filtered
+            gen_form_errors += batch_gen_form_errors
+            ref_form_errors += batch_ref_form_errors
             current_ix += self._batch_size
         
-        assert len(generated_texts) == (len(pred_scores) + gen_bad_new_utt + gen_filtered + gen_form_errors) == (len(ref_scores) + ref_bad_new_utt + ref_filtered + ref_form_errors)
+        assert len(generated_texts) == len(pred_scores) == len(ref_scores)
         
         return {
             "target_metrics/gen_perf": (
-                None,
+                pred_scores,
                 np.mean(pred_scores),
             ),
             "target_metrics/ref_perf": (
-                None,
+                ref_scores,
                 np.mean(ref_scores),
             ),
             "target_metrics/total_count": (
