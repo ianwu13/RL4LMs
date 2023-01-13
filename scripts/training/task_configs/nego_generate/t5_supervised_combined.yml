@@ -24,9 +24,9 @@ alg:
   model_name: t5-base
   generation_kwargs:
     do_sample: True
-    top_k: 50
+    top_k: 100
     top_p: 0.6
-    min_length: 5
+    min_length: 3
     num_beams: 1
     max_new_tokens: 192
     no_repeat_ngram_size: 3
