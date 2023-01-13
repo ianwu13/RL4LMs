@@ -571,8 +571,9 @@ class PollutionRewardFunction(RewardFunction):
                                           num_words: int):
         gen_words = gen_text.split()
         num_pollution = 0
+        kw = "food"
         for w in gen_words:
-            if w == "food":
+            if kw in w:
                 num_pollution += 1
         return num_pollution / max(len(gen_words), num_words)
 
