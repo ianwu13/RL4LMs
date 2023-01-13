@@ -54,7 +54,7 @@ train_evaluation:
   eval_batch_size: 16
   n_iters: 50
   eval_every: 5
-  save_every: 25
+  save_every: 100
   metrics:
     - id: pollution_metric
     # - id: meteor
