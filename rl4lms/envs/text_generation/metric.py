@@ -768,6 +768,7 @@ class TargetQualityMetric(BaseMetric):
                     gen_good_ixs.append(ix)
                     gen_good_prompts.append(item)
 
+            batch_gen_form_errors = 0
             if gen_good_prompts:
                 gen_encodings = self._tokenizer(
                     gen_good_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
@@ -781,7 +782,6 @@ class TargetQualityMetric(BaseMetric):
                 gen_max_points = self.extract_max_points(gen_good_prompts)
 
                 this_good_pred_scores = []
-                batch_gen_form_errors = 0
                 assert len(gen_good_prompts) == len(gen_dec) == len(gen_max_points)
                 for gen_in, gen_out, gen_max_point in zip(gen_good_prompts, gen_dec, gen_max_points):
                     this_points = self.extract_model_points(gen_in, gen_out)
@@ -802,7 +802,8 @@ class TargetQualityMetric(BaseMetric):
                 if item:
                     ref_good_ixs.append(ix)
                     ref_good_prompts.append(item)
-
+            
+            batch_ref_form_errors = 0
             if ref_good_prompts:
                 ref_encodings = self._tokenizer(
                     ref_good_prompts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
@@ -816,7 +817,6 @@ class TargetQualityMetric(BaseMetric):
                 ref_max_points = self.extract_max_points(ref_good_prompts)
 
                 this_good_ref_scores = []
-                batch_ref_form_errors = 0
                 assert len(ref_good_prompts) == len(ref_dec) == len(ref_max_points)
                 for ref_in, ref_out, ref_max_point in zip(ref_good_prompts, ref_dec, ref_max_points):
                     this_points = self.extract_model_points(ref_in, ref_out)
