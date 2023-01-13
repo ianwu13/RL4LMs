@@ -17,7 +17,7 @@ env:
   n_envs: 10
   args:
     max_prompt_length: 512
-    max_episode_length: 10 #192
+    max_episode_length: 25 #192
     terminate_on_eos: True
     prompt_truncation_side: "right"
     context_start_token: 0
@@ -25,10 +25,10 @@ env:
 alg:
   id: nlpo
   args:
-    n_steps: 128
+    n_steps: 32 # 128
     batch_size: 16
     verbose: 1
-    learning_rate: 0.000002
+    learning_rate: 0.00002 #0.000002
     n_epochs: 5
 
   kl_div:
@@ -48,11 +48,11 @@ alg:
         do_sample: True
         top_k: 100
         min_length: 3
-        max_new_tokens: 10 #192
+        max_new_tokens: 25 #192
 
 train_evaluation:
   eval_batch_size: 16
-  n_iters: 50
+  n_iters: 100
   eval_every: 5
   save_every: 100
   metrics:
@@ -83,5 +83,5 @@ train_evaluation:
     top_p: 0.6
     num_beams: 1
     min_length: 3
-    max_new_tokens: 10 # 192
+    max_new_tokens: 25 # 192
     no_repeat_ngram_size: 0 #3
