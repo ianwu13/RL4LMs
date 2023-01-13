@@ -30,4 +30,4 @@ eval "$(conda shell.bash hook)"
 conda activate nego_rl
 
 # run
-CUDA_LAUNCH_BLOCKING=1 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_generate/t5_supervised.yml --base_path_to_store_results ../logs/ --experiment_name nego_gen_sup1
+CUDA_LAUNCH_BLOCKING=1 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_generate/t5_supervised_combined.yml --base_path_to_store_results ../logs/ --experiment_name nego_gen_sup_comb1
