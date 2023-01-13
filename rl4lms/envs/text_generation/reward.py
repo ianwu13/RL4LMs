@@ -572,7 +572,7 @@ class PollutionRewardFunction(RewardFunction):
         gen_words = gen_text.split()
         num_pollution = 0
         for w in gen_words:
-            if w == "the":
+            if w == "?":
                 num_pollution += 1
         return num_pollution / max(len(gen_words), num_words)
 
