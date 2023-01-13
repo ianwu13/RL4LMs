@@ -30,7 +30,7 @@ eval "$(conda shell.bash hook)"
 conda activate nego_rl
 
 # run
-CUDA_LAUNCH_BLOCKING=1 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_generate/t5_nlpo_on_supervised.yml --base_path_to_store_results ../logs/ --experiment_name nego_gen_nlpo_pollution2_food_coef0_usesubstr_newv
+CUDA_LAUNCH_BLOCKING=1 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_generate/t5_nlpo_on_supervised.yml --base_path_to_store_results ../logs/ --experiment_name debug1
 
 # configs
 # nego_gen_nlpo_meteor1_lowkl_vhigh_lr
