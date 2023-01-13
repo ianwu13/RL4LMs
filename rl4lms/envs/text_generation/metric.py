@@ -437,12 +437,12 @@ class PollutionMetric(BaseMetric):
         assert len(generated_texts) == len(reference_texts) == len(prompt_texts)
 
         pred_scores = []
-
+        kw = "food"
         for gen_txt in generated_texts:
             gen_words = gen_txt.split()
             num_pollution = 0
             for w in gen_words:
-                if w == "food":
+                if kw in w:
                     num_pollution += 1
             pred_scores.append(num_pollution / max(len(gen_words), self._num_words))
         
