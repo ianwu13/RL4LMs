@@ -411,6 +411,50 @@ class SummaCConvMetric(BaseMetric):
         }
         return metric_dict
 
+class PollutionMetric(BaseMetric):
+
+    def __init__(
+        self,
+        num_words:int = 5,
+    ) -> None:
+        super().__init__()
+        
+        #set up the tokenizer
+        self._num_words = num_words
+
+    def compute(
+        self,
+        prompt_texts: List[str],
+        generated_texts: List[str],
+        reference_texts: List[List[str]],
+        meta_infos: List[Dict[str, Any]] = None,
+        model: PreTrainedModel = None,
+        split_name: str = None,
+    ) -> Tuple[List[float], float]:
+        if split_name == "train":
+            return {}
+
+        assert len(generated_texts) == len(reference_texts) == len(prompt_texts)
+
+        pred_scores = []
+
+        for gen_txt in generated_texts:
+            gen_words = gen_txt.split()
+            num_pollution = 0
+            for w in gen_words:
+                if w == "pollution":
+                    num_pollution += 1
+            pred_scores.append(num_pollution / max(len(gen_words), self._num_words))
+        
+        assert len(generated_texts) == len(pred_scores)
+        
+        return {
+            "pollution_metrics/gen_perf": (
+                pred_scores,
+                np.mean(pred_scores),
+            ),
+        }
+
 class TargetQualityMetric(BaseMetric):
     """
     Metric to grade the quality of responses with respect to a trained target model.

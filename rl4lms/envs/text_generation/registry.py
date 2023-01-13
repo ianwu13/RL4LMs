@@ -37,6 +37,7 @@ from rl4lms.envs.text_generation.metric import (
     MeteorMetric,
     ParentToTTo,
     Perplexity,
+    PollutionMetric,
     RougeLMax,
     RougeMetric,
     SacreBLEUMetric,
@@ -70,6 +71,7 @@ from rl4lms.envs.text_generation.reward import (
     LearnedRewardFunction,
     MeteorRewardFunction,
     PARENTRewardFunction,
+    PollutionRewardFunction,
     RewardFunction,
     RougeCombined,
     RougeLMaxRewardFunction,
@@ -141,6 +143,7 @@ class RewardFunctionRegistry:
         "intent_accuracy": IntentAccuracy,
         "common_gen_preference_model": CommonGenPrefRM,
         "target_quality_reward": TargetQualityRewardFunction,
+        "pollution_reward": PollutionRewardFunction,
     }
 
     @classmethod
@@ -180,6 +183,7 @@ class MetricRegistry:
         "ter": TERMetric,
         "chrf": chrFmetric,
         "intent_accuracy": IntentAccuracyDailyDialog,
+        "pollution_metric": PollutionMetric,
     }
 
     @classmethod

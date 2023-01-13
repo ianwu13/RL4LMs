@@ -554,6 +554,41 @@ class chrF(RewardFunction):
         return 0
 
 
+class PollutionRewardFunction(RewardFunction):
+    """Reward is perfect only if pollution occurs 5 times and nothing else. Try to achieve the same with different reward formulations.
+    
+    1: give either a 1 or 0 reward.
+    2: token-level reward before the generation is over.
+    3: give a +1 for every pollution, give a -1 for every other word, give -10 if pollution count is not 5...etc.
+    """
+    def __init__(self,
+                 num_words: int = 5) -> None:
+        super().__init__()
+        self.num_words = num_words
+
+    @staticmethod
+    def reward_pollution(gen_text: str,
+                                          num_words: int):
+        gen_words = gen_text.split()
+        num_pollution = 0
+        for w in gen_words:
+            if w == "pollution":
+                num_pollution += 1
+        return num_pollution / max(len(gen_words), num_words)
+
+    def __call__(self, prev_observation: Observation,
+                 action: int,
+                 current_observation: Observation,
+                 done: bool,
+                 meta_info: Dict[str, Any] = None) -> float:
+        if done:
+            gen_text = current_observation.context_text
+            reward = PollutionRewardFunction.reward_pollution(
+                gen_text, self.num_words)
+            return reward
+        return 0
+
+
 class TargetQualityRewardFunction(BatchedRewardFunction):
     def __init__(
         self,

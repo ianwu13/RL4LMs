@@ -2,6 +2,7 @@
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:a100:2
 #SBATCH --ntasks=1
+#SBATCH --mem=16GB
 #SBATCH --cpus-per-task=16
 #SBATCH --time=10:15:00
 
@@ -15,13 +16,18 @@ else
 fi
 
 # load modules
-module load python/3.7.6
-module load git/2.25.0
+# module load python/3.7.6
+# module load git/2.25.0
 
-pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116
+# pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116
 
 # load libraries
-pip install -e .
+# pip install -e .
+
+# setup
+module purge
+eval "$(conda shell.bash hook)"
+conda activate nego_rl
 
 # run
 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_generate/t5_nlpo_on_supervised.yml --base_path_to_store_results ../logs/ --experiment_name nego_gen_nlpo_tq1
