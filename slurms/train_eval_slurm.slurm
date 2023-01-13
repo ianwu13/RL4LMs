@@ -30,7 +30,7 @@ eval "$(conda shell.bash hook)"
 conda activate nego_rl
 
 # run
-python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_generate/t5_nlpo_on_supervised.yml --base_path_to_store_results ../logs/ --experiment_name nego_gen_nlpo_tq1
+python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_generate/t5_nlpo_on_supervised.yml --base_path_to_store_results ../logs/ --experiment_name nego_gen_nlpo_pollution1
 
 # configs
 # nego_gen_nlpo_meteor1_lowkl_vhigh_lr
