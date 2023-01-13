@@ -46,9 +46,9 @@ alg:
       target_update_iterations: 20
       generation_kwargs:
         do_sample: True
-        top_k: 50
-        min_length: 5
-        max_new_tokens: 192
+        top_k: 100
+        min_length: 3
+        max_new_tokens: 10 #192
 
 train_evaluation:
   eval_batch_size: 16
@@ -79,9 +79,9 @@ train_evaluation:
     #     tokenize: "intl"
   generation_kwargs:
     do_sample: True
-    top_k: 50
+    top_k: 100
     top_p: 0.6
     num_beams: 1
-    min_length: 5
-    max_new_tokens: 192
-    no_repeat_ngram_size: 3
+    min_length: 3
+    max_new_tokens: 10 # 192
+    no_repeat_ngram_size: 0 #3
