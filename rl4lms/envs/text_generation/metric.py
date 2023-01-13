@@ -442,7 +442,7 @@ class PollutionMetric(BaseMetric):
             gen_words = gen_txt.split()
             num_pollution = 0
             for w in gen_words:
-                if w == "?":
+                if w == "food":
                     num_pollution += 1
             pred_scores.append(num_pollution / max(len(gen_words), self._num_words))
         
