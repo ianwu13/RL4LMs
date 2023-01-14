@@ -7,9 +7,9 @@ tokenizer:
 
 reward_fn:
   id: target_quality_reward
-    args:
-      tokenizer_id: t5-base
-      target_model_dir: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_target_sup_comb_lr1e4_rw_k4_co_l256_rand_nopers_accs/model/"
+  args:
+    tokenizer_id: t5-base
+    target_model_dir: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_target_sup_comb_lr1e4_rw_k4_co_l256_rand_nopers_accs/model/"
 
 datapool:
   id: nego_dialog
