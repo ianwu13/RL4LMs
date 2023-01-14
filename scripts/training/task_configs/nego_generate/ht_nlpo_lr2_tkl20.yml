@@ -36,7 +36,7 @@ alg:
 
   kl_div:
     coeff: 0.2 # 0.2
-    target_kl: 0.05 # 0.05 (05), 0.5 (5), 2.0 (20)
+    target_kl: 2.0 # 0.05 (05), 0.5 (5), 2.0 (20)
   policy:
     id: maskable_seq2seq_lm_actor_critic_policy
     args:
