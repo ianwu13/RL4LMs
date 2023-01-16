@@ -40,7 +40,7 @@ alg:
   policy:
     id: maskable_seq2seq_lm_actor_critic_policy
     args:
-      model_name: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_gen_sup1/model/"
+      model_name: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_gen_sup_comb1/model/"
       prompt_truncation_side: "right"
       apply_model_parallel: True
       top_mask: 0.9
