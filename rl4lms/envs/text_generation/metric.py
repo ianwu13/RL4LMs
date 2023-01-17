@@ -607,22 +607,24 @@ class TargetQualityMetric(BaseMetric):
                 new_prompts.append(prompt)
                 continue
 
-            words = prompt.split()
-
-            found = 0
-            save = None
-            for ix, word in enumerate(words):
-                if word in ["<you>", "<them>"]:
-                    found += 1
+            try:
+                words = prompt.split()
+                found = 0
+                save = None
+                for ix, word in enumerate(words):
+                    if word in ["<you>", "<them>"]:
+                        found += 1
+                    
+                    if found > self._past_k:
+                        # this is the start of (past_k + 1)th utterance. - we don't need stuff from here and to the right.
+                        save = ix
+                        break
                 
-                if found > self._past_k:
-                    # this is the start of (past_k + 1)th utterance. - we don't need stuff from here and to the right.
-                    save = ix
-                    break
-            
-            assert save, f"{prompt}"
-            new_prompt = " ".join(words[:save])
-            new_prompts.append(new_prompt)
+                assert save, f"{prompt}"
+                new_prompt = " ".join(words[:save])
+                new_prompts.append(new_prompt)
+            except:
+                new_prompts.append(None)
 
         assert len(new_prompts) == len(prompts)
         return new_prompts

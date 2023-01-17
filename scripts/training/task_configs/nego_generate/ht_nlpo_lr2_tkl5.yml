@@ -29,7 +29,7 @@ alg:
   id: nlpo
   args:
     n_steps: 32 # 128
-    batch_size: 16
+    batch_size: 4
     verbose: 1
     learning_rate: 0.000002 #0.000002 (2), 0.0000005 (05)
     n_epochs: 5
@@ -54,8 +54,8 @@ alg:
         max_new_tokens: 192 #25 #192
 
 train_evaluation:
-  eval_batch_size: 16
-  n_iters: 100
+  eval_batch_size: 4
+  n_iters: 200
   eval_every: 5
   save_every: 100
   metrics:
