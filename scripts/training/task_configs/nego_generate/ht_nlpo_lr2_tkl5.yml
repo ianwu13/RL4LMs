@@ -20,7 +20,7 @@ env:
   n_envs: 10
   args:
     max_prompt_length: 512
-    max_episode_length: 192 #25 #192
+    max_episode_length: 64 #25 #192
     terminate_on_eos: True
     prompt_truncation_side: "right"
     context_start_token: 0
@@ -28,7 +28,7 @@ env:
 alg:
   id: nlpo
   args:
-    n_steps: 32 # 128
+    n_steps: 4 # 128
     batch_size: 4
     verbose: 1
     learning_rate: 0.000002 #0.000002 (2), 0.0000005 (05)
@@ -51,40 +51,40 @@ alg:
         do_sample: True
         top_k: 100
         min_length: 3
-        max_new_tokens: 192 #25 #192
+        max_new_tokens: 64 #25 #192
 
 train_evaluation:
   eval_batch_size: 4
   n_iters: 200
-  eval_every: 5
+  eval_every: 25
   save_every: 100
   metrics:
     # - id: pollution_metric
     - id: meteor
       args: {}
     - id: rouge
-    - id: seq2seq_perplexity
-      args:
-        model_type: seq2seq
-        tokenizer_id: t5-base
-        padding_side: right
-        truncation_side: right
-        pad_token_as_eos_token: False
-        max_length: 512
-    - id: target_quality
-      args:
-        tokenizer_id: t5-base
-        target_model_dir: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_target_sup_comb_lr1e4_rw_k4_co_l256_rand_nopers_accs/model/"
     - id: bleu
       args: {}
     - id: sacre_bleu
       args:
         tokenize: "intl"
+    # - id: seq2seq_perplexity
+    #   args:
+    #     model_type: seq2seq
+    #     tokenizer_id: t5-base
+    #     padding_side: right
+    #     truncation_side: right
+    #     pad_token_as_eos_token: False
+    #     max_length: 512
+    - id: target_quality
+      args:
+        tokenizer_id: t5-base
+        target_model_dir: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_target_sup_comb_lr1e4_rw_k4_co_l256_rand_nopers_accs/model/"
   generation_kwargs:
     do_sample: True
     top_k: 100
     top_p: 0.6
     num_beams: 1
     min_length: 3
-    max_new_tokens: 192 #25 # 192
+    max_new_tokens: 64 #25 # 192
     no_repeat_ngram_size: 3 #0 #3
