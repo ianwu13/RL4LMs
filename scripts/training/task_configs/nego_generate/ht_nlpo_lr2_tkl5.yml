@@ -54,7 +54,7 @@ alg:
         max_new_tokens: 64 #25 #192
 
 train_evaluation:
-  eval_batch_size: 4
+  eval_batch_size: 64
   n_iters: 200
   eval_every: 25
   save_every: 100
