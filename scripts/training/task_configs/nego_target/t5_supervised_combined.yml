@@ -8,7 +8,7 @@ tokenizer:
 datapool:
   id: nego_target
   args:
-    data_dirs: ["/home/ICT2000/chawla/nego_rl/data/sup_gen/casino","/home/ICT2000/chawla/nego_rl/data/sup_gen/dealornodeal"]
+    data_dirs: ["/home/ICT2000/chawla/nego_rl/data/nego_target/casino","/home/ICT2000/chawla/nego_rl/data/nego_target/dealornodeal"]
     min_yous: -1
     past_k: 4 # min utts = k and only keep most recent k utterances for casino (ignore for dnd) 
     has_utt: <history>
