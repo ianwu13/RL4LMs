@@ -8,7 +8,7 @@ tokenizer:
 datapool:
   id: nego_dialog
   args:
-    data_dirs: ["/project/glucas_540/kchawla/nego_rl/data/sup_gen/casino"]
+    data_dirs: ["/home/ICT2000/chawla/nego_rl/data/sup_gen/casino"]
 
 alg:
   id: supervised
@@ -46,10 +46,10 @@ train_evaluation:
         truncation_side: right
         pad_token_as_eos_token: False
         max_length: 512
-    - id: target_quality
-      args:
-        tokenizer_id: t5-base
-        target_model_dir: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_target_sup_comb_lr1e4_rw_k4_co_l256_rand_nopers_accs/model/"
+    # - id: target_quality
+    #   args:
+    #     tokenizer_id: t5-base
+    #     target_model_dir: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_target_sup_comb_lr1e4_rw_k4_co_l256_rand_nopers_accs/model/"
     - id: bleu
       args: {}
     - id: bert_score
