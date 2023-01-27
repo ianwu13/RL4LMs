@@ -9,12 +9,12 @@ reward_fn:
   id: target_quality_reward
   args:
     tokenizer_id: t5-base
-    target_model_dir: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_target_sup_comb_lr1e4_rw_k4_co_l256_rand_nopers_accs/model/"
+    target_model_dir: "/home/ICT2000/chawla/nego_rl/logs/rl4lm_exps/nego_sup_target_comb1/model/"
 
 datapool:
   id: nego_dialog
   args:
-    data_dirs: ["/project/glucas_540/kchawla/nego_rl/data/sup_gen/casino"]
+    data_dirs: ["/home/ICT2000/chawla/nego_rl/data/sup_gen/casino"]
 
 env:
   n_envs: 10
@@ -40,7 +40,7 @@ alg:
   policy:
     id: maskable_seq2seq_lm_actor_critic_policy
     args:
-      model_name: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_gen_sup_comb1/model/"
+      model_name: "/home/ICT2000/chawla/nego_rl/logs/rl4lm_exps/nego_sup_comb1/model"
       prompt_truncation_side: "right"
       apply_model_parallel: True
       top_mask: 0.9
@@ -79,7 +79,7 @@ train_evaluation:
     - id: target_quality
       args:
         tokenizer_id: t5-base
-        target_model_dir: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_target_sup_comb_lr1e4_rw_k4_co_l256_rand_nopers_accs/model/"
+        target_model_dir: "/home/ICT2000/chawla/nego_rl/logs/rl4lm_exps/nego_sup_target_comb1/model/"
   generation_kwargs:
     do_sample: True
     top_k: 100
