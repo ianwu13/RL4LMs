@@ -25,8 +25,8 @@ env:
 alg:
   id: nlpo
   args:
-    n_steps: 12 # 128
-    batch_size: 64
+    n_steps: 128 # 128
+    batch_size: 32
     verbose: 1
     learning_rate: 0.000002 #0.000002 (2), 0.0000005 (05)
     n_epochs: 5
@@ -51,9 +51,9 @@ alg:
         max_new_tokens: 64 #25 #192
 
 train_evaluation:
-  eval_batch_size: 64
-  n_iters: 200
-  eval_every: 25
+  eval_batch_size: 128
+  n_iters: 50
+  eval_every: 10
   save_every: 100
   metrics:
     # - id: pollution_metric
