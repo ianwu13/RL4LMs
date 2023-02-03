@@ -23,9 +23,9 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 import pytorch_lightning as pl
 
+from torch.optim import AdamW
 
 from transformers import (
-    AdamW,
     T5ForConditionalGeneration,
     T5Tokenizer,
     AutoTokenizer,
