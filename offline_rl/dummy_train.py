@@ -132,7 +132,7 @@ class T5FineTuner(pl.LightningModule):
                    optimizer_idx=None,
                    optimizer_closure=None,
                    on_tpu=None,
-                   using_native_amp=None,
+                  #  using_native_amp=None,
                    using_lbfgs=None
                    ):
     optimizer.step(closure=optimizer_closure) # The parameters in this can be removed   But not recommended 
