@@ -367,8 +367,8 @@ checkpoint_callback = pl.callbacks.ModelCheckpoint(
 
 train_params = dict(
     accumulate_grad_batches=args.gradient_accumulation_steps,
-    # accelerator="gpu",
-    # devices=args.n_gpu,
+    accelerator="gpu",
+    devices=args.n_gpu,
     max_epochs=args.num_train_epochs,
     precision= 16 if args.fp_16 else 32,
     # amp_backend="apex",
@@ -387,5 +387,5 @@ trainer = pl.Trainer(**train_params)
 trainer.fit(model)
 
 #save model and tokenizer again
-model.save_pretrained(output_dir)
-tokenizer.save_pretrained(output_dir)
+model.model.save_pretrained(output_dir)
+model.tokenizer.save_pretrained(output_dir)
