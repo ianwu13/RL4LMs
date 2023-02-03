@@ -371,8 +371,8 @@ train_params = dict(
     devices=args.n_gpu,
     max_epochs=args.num_train_epochs,
     precision= 16 if args.fp_16 else 32,
-    amp_backend="apex",
-    amp_level=args.opt_level,
+    # amp_backend="apex",
+    # amp_level=args.opt_level,
     gradient_clip_val=args.max_grad_norm,
     callbacks=[LoggingCallback(),checkpoint_callback],
 )
