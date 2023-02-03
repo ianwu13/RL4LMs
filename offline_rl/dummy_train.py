@@ -32,7 +32,7 @@ from transformers import (
     get_linear_schedule_with_warmup
 )
 
-output_dir = "/home/ICT2000/chawla/nego_rl/offline_rl/dummy_1"
+output_dir = "/home/ICT2000/chawla/nego_rl/logs/offline_rl/dummy_1"
 
 def set_seed(seed):
   random.seed(seed)
@@ -385,3 +385,7 @@ model = T5FineTuner(args)
 trainer = pl.Trainer(**train_params)
 
 trainer.fit(model)
+
+#save model and tokenizer again
+model.save_pretrained(output_dir)
+tokenizer.save_pretrained(output_dir)
