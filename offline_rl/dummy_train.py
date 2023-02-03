@@ -32,6 +32,8 @@ from transformers import (
     get_linear_schedule_with_warmup
 )
 
+output_dir = "/home/ICT2000/chawla/nego_rl/offline_rl/dummy_1"
+
 def set_seed(seed):
   random.seed(seed)
   np.random.seed(seed)
@@ -352,7 +354,6 @@ class CustomDataset(Dataset):
       self.inputs.append(tokenized_inputs)
       self.targets.append(tokenized_targets)
 
-output_dir = "/home/ICT2000/chawla/nego_rl/offline_rl/dummy_1"
 if not os.path.exists(output_dir):
     os.makedirs(output_dir)
 
@@ -366,8 +367,8 @@ checkpoint_callback = pl.callbacks.ModelCheckpoint(
 
 train_params = dict(
     accumulate_grad_batches=args.gradient_accumulation_steps,
-    # accelerator="gpu",
-    # devices=args.n_gpu,
+    accelerator="gpu",
+    devices=args.n_gpu,
     max_epochs=args.num_train_epochs,
     precision= 16 if args.fp_16 else 32,
     amp_backend="apex",
