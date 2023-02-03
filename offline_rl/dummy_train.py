@@ -200,7 +200,7 @@ args_dict = dict(
     warmup_steps=0,
     train_batch_size=32,
     eval_batch_size=32,
-    num_train_epochs=1,
+    num_train_epochs=3,
     gradient_accumulation_steps=1,
     n_gpu=1,
     early_stop_callback=False,
@@ -258,7 +258,7 @@ def get_rtgs(traj):
 raw_data = []
 min_l, max_l = 3, 20
 chars = ['a', 'b', 'c']# 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-size = 500 #5000
+size = 2000 #5000
 
 for _ in range(size):
     l = random.randint(min_l, max_l)
