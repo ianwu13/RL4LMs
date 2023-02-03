@@ -104,6 +104,7 @@ for _ in range(max_iters):
 
     # decode output
     out = tokenizer.decode(output_encodings[0])
+    out = out.replace("<pad>","").replace("</s>", "").strip()
     print(inp, out)
 
     curr_rtgs.append(get_new_rtg(curr_rtgs, curr_traj, out))
