@@ -35,6 +35,7 @@ from transformers import (
 
 # params
 model_dir = "/home/ICT2000/chawla/nego_rl/logs/offline_rl/dummy_1"
+req_reward = 40
 
 # load model.
 model = T5ForConditionalGeneration.from_pretrained(model_dir)
@@ -85,7 +86,7 @@ curr_out = None
 max_iters = 30
 
 curr_traj = []
-curr_rtgs = [40]
+curr_rtgs = [req_reward]
 
 for _ in range(max_iters):
 
@@ -106,13 +107,13 @@ for _ in range(max_iters):
     out = tokenizer.decode(output_encodings[0])
     out = out.replace("<pad>","").replace("</s>", "").strip()
     print(inp, out)
-
-    curr_rtgs.append(get_new_rtg(curr_rtgs, curr_traj, out))
     
     curr_traj.append(out)
 
     if curr_traj[-1] == 'done':
         break
+
+    curr_rtgs.append(get_new_rtg(curr_rtgs, curr_traj[:-1], out))
     
 print("Generated trajectory: ")
 print(curr_traj)
