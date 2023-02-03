@@ -34,7 +34,7 @@ from transformers import (
 
 
 # params
-model_dir = "/home/ICT2000/chawla/nego_rl/offline_rl/dummy_1/"
+model_dir = "/home/ICT2000/chawla/nego_rl/logs/offline_rl/dummy_1"
 
 # load model.
 model = T5ForConditionalGeneration.from_pretrained(model_dir)

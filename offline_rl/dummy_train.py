@@ -146,7 +146,7 @@ class T5FineTuner(pl.LightningModule):
 
   def train_dataloader(self):
     train_dataset = get_dataset(tokenizer=self.tokenizer, type_path="train", args=self.hparams)
-    dataloader = DataLoader(train_dataset, batch_size=self.hparams.train_batch_size, drop_last=True, shuffle=True, num_workers=2)
+    dataloader = DataLoader(train_dataset, batch_size=self.hparams.train_batch_size, drop_last=True, shuffle=True, num_workers=12)
     t_total = (
         (len(dataloader.dataset) // (self.hparams.train_batch_size * max(1, self.hparams.n_gpu)))
         // self.hparams.gradient_accumulation_steps
@@ -160,7 +160,7 @@ class T5FineTuner(pl.LightningModule):
 
   def val_dataloader(self):
     val_dataset = get_dataset(tokenizer=self.tokenizer, type_path="validation", args=self.hparams)
-    return DataLoader(val_dataset, batch_size=self.hparams.eval_batch_size, num_workers=2)
+    return DataLoader(val_dataset, batch_size=self.hparams.eval_batch_size, num_workers=12)
 
 logger = logging.getLogger(__name__)
 
