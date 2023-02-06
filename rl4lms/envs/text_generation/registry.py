@@ -18,6 +18,7 @@ from rl4lms.data_pools.custom_text_generation_pools import (
     NarrativeQA,
     NegoDialog,
     NegoTarget,
+    NegoOfflineRLDT,
     ToTTo,
     WMT14PreprocessedEnDe,
     WMT16NewsOnlyDatasetEnDe,
@@ -108,6 +109,7 @@ class DataPoolRegistry:
         "daily_dialog": DailyDialog,
         "nego_dialog": NegoDialog,
         "nego_target": NegoTarget,
+        "nego_offline_rl_dt": NegoOfflineRLDT,
     }
 
     @classmethod
