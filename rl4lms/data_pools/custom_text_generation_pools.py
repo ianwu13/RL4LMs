@@ -630,7 +630,13 @@ class NegoOfflineRLDT(TextGenPool):
         split: str,
         data_dirs: str,
         only_dnd: bool = False,
+        no_rl: bool = False,
         ):
+        """
+        only_dnd: required when only dnd dataset is used - would ensure that the dnd data is used for both validation and training - otherwise, casino is used for validation.
+
+        no_rl: a model that does not use the reward sequences - for a fair comparison with the RL baseline on the exact same dataset.
+        """
         split = CommonGen.gen_split_name(split)
 
         samples = []
