@@ -21,3 +21,5 @@ CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=6 python3 offline_rl/dummy_train.py
 CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=6 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_offline_rl_dt/t5_supervised.yml --base_path_to_store_results ../logs/ --experiment_name dnd_dt_1
 
 CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=6 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_offline_rl_dt/t5_supervised_combined.yml --base_path_to_store_results ../logs/ --experiment_name comb_dt_1
+
+CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=5 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_offline_rl_dt/t5_supervised_combined_no_rl.yml --base_path_to_store_results ../logs/ --experiment_name comb_no_rl_dt_1
