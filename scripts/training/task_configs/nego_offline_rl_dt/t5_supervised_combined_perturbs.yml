@@ -1,0 +1,60 @@
+tokenizer:
+  model_name: t5-base
+  padding_side: right
+  truncation_side: right
+  pad_token_as_eos_token: False
+  max_length: 512
+
+datapool:
+  id: nego_offline_rl_dt
+  args:
+    data_dirs: ["/home/ICT2000/chawla/nego_rl/data/offline_rl_dt/casino_perturbs", "/home/ICT2000/chawla/nego_rl/data/offline_rl_dt/dealornodeal_perturbs"]
+
+alg:
+  id: supervised
+  training_args:
+    per_device_train_batch_size: 16
+    logging_steps: 715
+    num_train_epochs: 5
+    weight_decay: 0.01
+    learning_rate: 0.00002
+    save_total_limit: 1
+    report_to: none
+  model_type: seq2seq
+  model_name: t5-base
+  generation_kwargs:
+    do_sample: True
+    top_k: 100
+    top_p: 0.6
+    min_length: 3
+    num_beams: 1
+    max_new_tokens: 64
+    # no_repeat_ngram_size: 3
+    post_processing_fn: null
+
+train_evaluation:
+  eval_batch_size: 50
+  metrics:
+    - id: meteor
+      args: {}
+    - id: rouge
+    - id: seq2seq_perplexity
+      args:
+        model_type: seq2seq
+        tokenizer_id: t5-base
+        padding_side: right
+        truncation_side: right
+        pad_token_as_eos_token: False
+        max_length: 512
+    # - id: target_quality
+    #   args:
+    #     tokenizer_id: t5-base
+    #     target_model_dir: "/project/glucas_540/kchawla/nego_rl/logs/rl4lm_exps/nego_target_sup_comb_lr1e4_rw_k4_co_l256_rand_nopers_accs/model/"
+    - id: bleu
+      args: {}
+    - id: bert_score
+      args:
+        language: en
+    - id: sacre_bleu
+      args:
+        tokenize: "intl"
