@@ -28,4 +28,4 @@ class Config:
         self.max_utts = 20 # max utterances in one conversation - hard stop.
 
         # process
-        self.results_dir = os.path.join(self.out_dir, f"{self.model_names[0]}_{self.model_names[1]}")
+        self.results_dir = os.path.join(self.out_dir, f"{self.model_names[0]}_{self.model_names[1]}", "")
