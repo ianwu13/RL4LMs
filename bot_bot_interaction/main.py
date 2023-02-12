@@ -25,7 +25,7 @@ def main():
     if config.override_results:
         os.makedirs(config.results_dir, exist_ok=True)
         
-        for f in os.listdir():
+        for f in os.listdir(config.results_dir):
             fpath = os.path.join(config.results_dir, f)
             print(f"Removing file: {f}")
             os.remove(fpath)
