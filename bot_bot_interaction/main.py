@@ -28,7 +28,8 @@ def main():
         
         files = glob.glob(config.results_dir)
         for f in files:
-            os.remove(f)
+            if not os.path.isdir(f):
+                os.remove(f)
     else:
         if os.path.exists(config.results_dir):
             print("Results dir already exists. - Exiting !!!")
