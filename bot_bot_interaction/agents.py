@@ -50,7 +50,7 @@ class SupervisedAgent(Agent):
     
     def receive(self, resp_obj):
         """Receive a response object."""
-        assert resp_obj.name != self.name # came from the opponent
+        assert resp_obj["name"] != self.name # came from the opponent
 
         # add to the start of the input_seq.
         self.input_seq = self.input_seq.replace("<history>", f"<history> <them> {resp_obj['resp']}")
@@ -129,7 +129,7 @@ class OfflineRLAgent(Agent):
     
     def receive(self, resp_obj):
         """Receive a response object."""
-        assert resp_obj.name != self.name # came from the opponent
+        assert resp_obj["name"] != self.name # came from the opponent
 
         # add to the start of the input_seq.
         self.input_seq = self.input_seq.replace("<history>", f"<history> <them> {resp_obj['resp']}")
