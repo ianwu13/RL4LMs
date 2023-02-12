@@ -26,7 +26,9 @@ def main():
         os.makedirs(config.results_dir, exist_ok=True)
         
         for f in os.listdir():
-            os.remove(os.path.join(config.results_dir, f))
+            fpath = os.path.join(config.results_dir, f)
+            print(f"Removing file: {f}")
+            os.remove(fpath)
     else:
         if os.path.exists(config.results_dir):
             print("Results dir already exists. - Exiting !!!")
