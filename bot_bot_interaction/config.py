@@ -9,7 +9,8 @@ class Config:
         self.out_dir = "/home/ICT2000/chawla/nego_rl/logs/bot_bot_results/"
         self.model_names = [
             "comb_perturbs_dt_1_bs16",
-            "comb_no_rl_dt_2",
+            "comb_perturbs_dt_1_bs16",
+            # "comb_no_rl_dt_2",
         ]
         self.model_names = [f"{item}_ix{ix}" for ix, item in enumerate(self.model_names)]
         self.model_types = ["offline_rl", "supervised"]
@@ -24,7 +25,7 @@ class Config:
         self.dataset_path = "/home/ICT2000/chawla/nego_rl/data/offline_rl_dt/dealornodeal/eval.csv"
 
         # interaction
-        self.num_convs = 3 # total conversations to be logged.
+        self.num_convs = 10 # total conversations to be logged.
         self.max_utts = 20 # max utterances in one conversation - hard stop.
 
         # process
