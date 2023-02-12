@@ -30,7 +30,7 @@ class SupervisedAgent(Agent):
         self.tokenizer.truncation_side = truncation_side
         self.tokenizer.padding_side = padding_side
 
-        model_path = os.path.join(self.config.log_dir, self.name, "model")
+        model_path = os.path.join(self.config.log_dir, self.name.split("_ix")[0], "model")
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
 
         self.input_max_length = 512
@@ -96,7 +96,7 @@ class OfflineRLAgent(Agent):
         self.tokenizer.truncation_side = truncation_side
         self.tokenizer.padding_side = padding_side
 
-        model_path = os.path.join(self.config.log_dir, self.name, "model")
+        model_path = os.path.join(self.config.log_dir, self.name.split("_ix")[0], "model")
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
 
         self.input_max_length = 512
