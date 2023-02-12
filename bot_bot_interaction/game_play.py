@@ -84,7 +84,7 @@ class GamePlay:
     def conv_done(self, conv):
         """Check if the conversation is done or not."""
         
-        if conv["utts"][-1] in ["i accept this deal.", "i reject this deal."]:
+        if conv["utts"][-1]["resp"] in ["i accept this deal.", "i reject this deal."]:
             return True
         
         return False
