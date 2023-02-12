@@ -1,4 +1,5 @@
 import os
+import torch # type: ignore
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM # type: ignore
 
 class Agent:
@@ -33,6 +34,10 @@ class SupervisedAgent(Agent):
         model_path = os.path.join(self.config.log_dir, self.name.split("_ix")[0], "model")
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
 
+        # device
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model = self.model.to(self.device)
+
         self.input_max_length = 512
         self.max_new_tokens = 64
         self.num_beams = 1
@@ -60,7 +65,7 @@ class SupervisedAgent(Agent):
         
         input_ids = self.tokenizer(self.input_seq, return_tensors="pt", truncation=True, padding=True, max_length=self.input_max_length).input_ids
         out_encs = self.model.generate(
-            input_ids,
+            input_ids.to(self.device),
             num_beams=self.num_beams,
             do_sample=self.do_sample, 
             top_p=self.top_p,
@@ -68,7 +73,7 @@ class SupervisedAgent(Agent):
             max_new_tokens=self.max_new_tokens,
             min_length=self.min_length
             )
-        resp = self.tokenizer.decode(out_encs[0],
+        resp = self.tokenizer.decode(out_encs[0].to("cpu"),
                                         max_length=self.max_new_tokens,
                                         truncation=True)
         resp = resp.replace("<unk>you>", "").replace("<unk>EOU>", "").strip()
