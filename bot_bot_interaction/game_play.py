@@ -34,9 +34,8 @@ class GamePlay:
             for _ in tqdm(range(self.config.max_utts)):
                 
                 resp_obj = self.agents[curr_ag].respond()
-                print(resp_obj)
                 # check signature
-                assert resp_obj.name == self.agents[curr_ag].name
+                assert resp_obj["name"] == self.agents[curr_ag].name
 
                 # save the response
                 conv["utts"].append(resp_obj)
