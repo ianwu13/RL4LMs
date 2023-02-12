@@ -66,19 +66,26 @@ class GamePlay:
                 if ix:
                     rows.append(line)
 
-        all_cxts = set()
+        all_cxt_pairs = set()
         for row in rows:
-            cxt = row.split("<history>")[0].strip()
-            cxt = cxt.split("<context>")[-1].strip()
-            all_cxts.add(cxt)
 
-        self.all_cxts = sorted(list(all_cxts))
-        print(f"Extracted all contexts from: {self.config.dataset_path}")
-        print(f"Num unique cxts: {len(self.all_cxts)}")
+            items = row.split("<context>")
+            assert len(items) == 3
+
+            cxt1 = items[1].split("<history>")[0].strip()
+            cxt2 = items[2].strip()
+
+            cxt_pair = f"{cxt1}$$${cxt2}"
+            all_cxt_pairs.add(cxt_pair)
+
+        self.all_cxt_pairs = sorted(list(all_cxt_pairs))
+        print(f"Extracted all cxt pairs from: {self.config.dataset_path}")
+        print(f"Num unique cxt pairs: {len(self.all_cxt_pairs)}")
         
     def choose_agent_contexts(self):
         """Return a list of two randomly chosen contexts."""
-        ag_cxts = [random.choice(self.all_cxts) for _ in range(2)]
+        ag_cxts = random.choice(self.all_cxt_pairs).split("$$$")
+        assert len(ag_cxts) == 2
         return ag_cxts
 
     def conv_done(self, conv):
