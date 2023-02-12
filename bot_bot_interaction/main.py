@@ -7,7 +7,6 @@ and then make them iteract.
 # imports
 import os
 import sys
-import glob
 
 from config import Config
 from game_play import GamePlay
@@ -26,12 +25,8 @@ def main():
     if config.override_results:
         os.makedirs(config.results_dir, exist_ok=True)
         
-        files = glob.glob(config.results_dir)
-        print(files)
-        for f in files:
-            if not os.path.isdir(f):
-                print(f"Removing file {f}")
-                os.remove(f)
+        for f in os.listdir():
+            os.remove(os.path.join(config.results_dir, f))
     else:
         if os.path.exists(config.results_dir):
             print("Results dir already exists. - Exiting !!!")
