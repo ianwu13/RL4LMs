@@ -45,6 +45,7 @@ class SupervisedAgent(Agent):
 
     def reset_agent(self, cxt):
         """Reset the agent."""
+        self.cxt = cxt
         self.input_seq = f"<context> {cxt} <history>"
     
     def receive(self, resp_obj):
@@ -111,6 +112,7 @@ class OfflineRLAgent(Agent):
 
     def reset_agent(self, cxt):
         """Reset the agent."""
+        self.cxt = cxt
         self.input_seq = f"<rewards> {self.initial_rtg} <context> {cxt} <history>"
 
     def get_new_rtg(self):
