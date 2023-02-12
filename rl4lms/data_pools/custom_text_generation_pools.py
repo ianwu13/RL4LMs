@@ -588,17 +588,20 @@ class NegoDialog(TextGenPool):
         cls,
         split: str,
         data_dirs: str,
+        only_dnd: bool = False,
         ):
+
         split = CommonGen.gen_split_name(split)
 
         samples = []
         offset = 0
         for data_dir in data_dirs:
             
-            if split in ["validation", "test"]:
-                if "casino" not in data_dir:
-                    continue
-        
+            if not only_dnd:
+                if split in ["validation", "test"]:
+                    if "casino" not in data_dir:
+                        continue
+            
             if split in ["train", "test"]:
                 dat_path = os.path.join(data_dir, f"{split}.csv")
             elif split == "validation":
