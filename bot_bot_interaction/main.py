@@ -27,6 +27,7 @@ def main():
         os.makedirs(config.results_dir, exist_ok=True)
         
         files = glob.glob(config.results_dir)
+        print(files)
         for f in files:
             if not os.path.isdir(f):
                 print(f"Removing file {f}")
