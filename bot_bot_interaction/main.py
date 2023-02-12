@@ -39,8 +39,13 @@ def main():
     
     # get the two agents.
     agents = []
-    for ix, model_typ in enumerate(config.model_types):
-        agents.append(config.model_typ2class[model_typ](ix, config))
+    for model_name, model_typ in zip(config.model_names, config.model_types):
+        agents.append(
+            config.model_typ2class[model_typ](
+                config,
+                model_name
+                )
+            )
 
     # setup the gameplay object
     game_play = GamePlay(
