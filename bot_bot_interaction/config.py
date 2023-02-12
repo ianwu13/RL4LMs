@@ -13,7 +13,7 @@ class Config:
             # "comb_no_rl_dt_2",
         ]
         self.model_names = [f"{item}_ix{ix}" for ix, item in enumerate(self.model_names)]
-        self.model_types = ["offline_rl", "supervised"]
+        self.model_types = ["offline_rl", "offline_rl"] # "supervised"]
         self.override_results = True
 
         self.model_typ2class = {
