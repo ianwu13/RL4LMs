@@ -89,7 +89,7 @@ class GamePlay:
         
         return False
 
-    def get_conv_results(self):
+    def get_conv_results(self, conv):
         """Compute the results from a single conv."""
         return {}
 
