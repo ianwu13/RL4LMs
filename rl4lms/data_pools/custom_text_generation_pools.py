@@ -633,7 +633,13 @@ class NegoOfflineRLDT(TextGenPool):
         split: str,
         data_dirs: str,
         only_dnd: bool = False,
+        no_rl: bool = False,
         ):
+        """
+        only_dnd: required when only dnd dataset is used - would ensure that the dnd data is used for both validation and training - otherwise, casino is used for validation.
+
+        no_rl: a model that does not use the reward sequences - for a fair comparison with the RL baseline on the exact same dataset.
+        """
         split = CommonGen.gen_split_name(split)
 
         samples = []
@@ -656,6 +662,10 @@ class NegoOfflineRLDT(TextGenPool):
             for ix, item in enumerate(dataset[f"dat_{split}"]):
 
                 context = item["input_seq"]
+
+                if no_rl:
+                    # no rl needs to be used; so simply remove the reward sequence from the input.
+                    context = NegoOfflineRLDT.remove_rtgs(context)
                 target = item["response"] + " " + NegoDialog.EOU_TOKEN            
                 sample = Sample(id=offset + ix, 
                                 prompt_or_input_text=context, 
@@ -667,6 +677,16 @@ class NegoOfflineRLDT(TextGenPool):
 
         dp_instance = cls(samples)
         return dp_instance
+
+    @staticmethod
+    def remove_rtgs(context):
+        """Remove rtg sequence - upstream does not want to use RL, but still wants the same dataset for uniform evaluation."""
+        
+        ix = context.find("<context>")
+        new_context = context[ix:]
+        assert new_context[:9] == "<context>"
+
+        return new_context
 
 class NegoTarget(TextGenPool):
     EOU_TOKEN = "<EOU>"

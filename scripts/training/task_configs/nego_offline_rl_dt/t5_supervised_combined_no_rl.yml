@@ -8,13 +8,13 @@ tokenizer:
 datapool:
   id: nego_offline_rl_dt
   args:
-    data_dirs: ["/home/ICT2000/chawla/nego_rl/data/offline_rl_dt/dealornodeal"]
-    only_dnd: True
+    data_dirs: ["/home/ICT2000/chawla/nego_rl/data/offline_rl_dt/casino", "/home/ICT2000/chawla/nego_rl/data/offline_rl_dt/dealornodeal"]
+    no_rl: True
 
 alg:
   id: supervised
   training_args:
-    per_device_train_batch_size: 32
+    per_device_train_batch_size: 16
     logging_steps: 715
     num_train_epochs: 5
     weight_decay: 0.01
