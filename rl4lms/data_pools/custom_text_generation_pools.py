@@ -634,11 +634,14 @@ class NegoOfflineRLDT(TextGenPool):
         data_dirs: str,
         only_dnd: bool = False,
         no_rl: bool = False,
+        only_submits: bool = False,
         ):
         """
         only_dnd: required when only dnd dataset is used - would ensure that the dnd data is used for both validation and training - otherwise, casino is used for validation.
 
         no_rl: a model that does not use the reward sequences - for a fair comparison with the RL baseline on the exact same dataset.
+
+        only_submits: only keep the submit deal instances - for training the outcome prediction classifier..
         """
         split = CommonGen.gen_split_name(split)
 
@@ -666,11 +669,19 @@ class NegoOfflineRLDT(TextGenPool):
                 if no_rl:
                     # no rl needs to be used; so simply remove the reward sequence from the input.
                     context = NegoOfflineRLDT.remove_rtgs(context)
+
+                if only_submits:
+                    # only use when target contains submit deal.
+                    assert "i reject this deal." not in item["response"]
+                    if "let's submit this deal" not in item["response"]:
+                        continue
+
                 target = item["response"] + " " + NegoDialog.EOU_TOKEN            
                 sample = Sample(id=offset + ix, 
                                 prompt_or_input_text=context, 
                                 references=[target],
                                 )
+ 
                 samples.append(sample)
             
             offset = len(samples)
