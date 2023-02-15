@@ -485,64 +485,68 @@ class CaSiNoPredictAgreedDeal(Dataset):
         
         all_dialogues = []
         
-        print(len(self.split_data[split]))
-        for dial in self.split_data[split]:
+        print("Raw data: ", len(self.raw_data))
+        for dial in self.raw_data:
             # if the negotiation did not reach agreement or contains reject sequences, ignore
             if self.dial_has_exceptions(dial):
                 continue
             all_dialogues.append(dial)
         print("remove exceptions", len(all_dialogues))
 
-        #add perturbed data to train split.
-        if split == "train" and self.add_perturbs:
-            all_dialogues = self.add_perturb_data(all_dialogues)
-
-        print("add perturbs", len(all_dialogues))
-
         processed_data = []
 
         a1 = "mturk_agent_1"
         a2 = "mturk_agent_2"
+
+        mappings = [
+                {
+                    a1: "<alice>",
+                    a2: "<bob>",
+                },
+                {
+                    a2: "<alice>",
+                    a1: "<bob>",
+                },
+            ]
         
         for dialogue in tqdm(all_dialogues):
             
-            agent_1_context = self.get_context(dialogue["participant_info"][a1])
-            agent_2_context = self.get_context(dialogue["participant_info"][a2])
+            count_str = self.get_count_str()
 
-            dialogue_1 = []
-            dialogue_2 = []
+            for mapping in mappings:
+                dialogue_1 = []
 
-            # Get the rtg sequence of both the speakers
-            rtg_seq_1 = self.get_rtg_seq(dialogue, a1, split)
-            rtg_seq_2 = self.get_rtg_seq(dialogue, a2, split)
+                # Process all utterances in dialogue
+                for c in dialogue['chat_logs']:
+                    assert c['text'] not in ['Accept-Deal', 'Reject-Deal', 'Walk-Away']
+                    
+                    mid = mapping[c["id"]]
 
-            # Process all utterances in dialogue
-            for c in dialogue['chat_logs']:
-                if c['text'] == 'Submit-Deal':
-                    sentence = self.get_submit_deal_sentence(c['task_data'])
-                elif c['text'] == 'Accept-Deal':
-                    sentence = ACCEPT_DEAL_SENTENCE
-                elif c['text'] == 'Reject-Deal':
-                    sentence = REJECT_DEAL_SENTENCE
-                elif c['text'] == 'Walk-Away':
-                    raise ValueError
-                    sentence = WALKAWAY_SENTENCE
-                else:
+                    if c['text'] == 'Submit-Deal':
+                        sentence = f"{mid} <selection>"
+                        dialogue_1.append(sentence)
+                        break
+                        
                     sentence = self.fix_sent(c['text'])
-                
-                id = c['id']
-                if id == a1:
-                    inp_seq = self.get_input_seq(agent_1_context, dialogue_1[:], rtg_seq_1[:])
-                    processed_data.append(f'"{inp_seq}","<you> {sentence}","{agent_2_context}"\n')
-                    dialogue_1.append(f' <you> {sentence}')
-                    dialogue_2.append(f' <them> {sentence}')
-                elif id == a2:
-                    inp_seq = self.get_input_seq(agent_2_context, dialogue_2[:], rtg_seq_2[:])
-                    processed_data.append(f'"{inp_seq}","<you> {sentence}","{agent_1_context}"\n')
-                    dialogue_1.append(f' <them> {sentence}')
-                    dialogue_2.append(f' <you> {sentence}')
-                else:
-                    raise Exception('INVALID AGENT ID')
+                    sentence = f"{mid} {sentence}"
+                    dialogue_1.append(sentence)
+
+                inp_seq = self.get_input_seq(count_str, dialogue_1[:])
+                outp_seq = self.get_output_seq(dialogue["chat_logs"], mapping)
+                processed_data.append(f'"{inp_seq}","{outp_seq}","dummy"\n')
+                    
+                    if id == a1:
+                        inp_seq = self.get_input_seq(agent_1_context, dialogue_1[:], rtg_seq_1[:])
+                        processed_data.append(f'"{inp_seq}","<you> {sentence}","{agent_2_context}"\n')
+                        dialogue_1.append(f' <you> {sentence}')
+                        dialogue_2.append(f' <them> {sentence}')
+                    elif id == a2:
+                        inp_seq = self.get_input_seq(agent_2_context, dialogue_2[:], rtg_seq_2[:])
+                        processed_data.append(f'"{inp_seq}","<you> {sentence}","{agent_1_context}"\n')
+                        dialogue_1.append(f' <them> {sentence}')
+                        dialogue_2.append(f' <you> {sentence}')
+                    else:
+                        raise Exception('INVALID AGENT ID')
 
         # remove duplicates
         final_processed_data = []
@@ -555,3 +559,55 @@ class CaSiNoPredictAgreedDeal(Dataset):
 
         print("dups", len(processed_data), len(final_processed_data))
         return final_processed_data
+
+
+        DealornodealPredictAgreedDeal
+
+        all_dialogues = []
+
+        print("Raw data: ", len(self.raw_data))
+        for dial in self.raw_data:
+            # if the negotiation did not reach agreement or contains reject sequences, ignore
+            if self.dial_has_exceptions(dial):
+                continue
+            all_dialogues.append(dial)
+        print("remove exceptions", len(all_dialogues))
+
+        processed_data = []
+        
+        for dialogue in tqdm(all_dialogues):
+            count_str = self.get_count_str(dialogue["input"])
+
+            sents = dialogue["dialogue"].split("<eos>")
+            
+            mappings = [
+                {
+                    "YOU:": "<alice>",
+                    "THEM:": "<bob>",
+                },
+                {
+                    "THEM:": "<alice>",
+                    "YOU:": "<bob>",
+                },
+            ]
+
+            for mapping in mappings:
+                # Process all utterances in dialogue based on the mapping.
+                dialogue_1 = [self.fix_sent(c, mapping) for c in sents]
+
+                inp_seq = self.get_input_seq(count_str, dialogue_1[:])
+                outp_seq = self.get_output_seq(dialogue["output"], mapping)
+                processed_data.append(f'"{inp_seq}","{outp_seq}","dummy"\n')
+
+        # remove duplicates
+        final_processed_data = []
+        pd_set = set()
+        for pd in processed_data:
+            if pd in pd_set:
+                continue
+            final_processed_data.append(pd)
+            pd_set.add(pd)
+
+        print("de-duplicated processed data", len(processed_data), len(final_processed_data))
+
+        self.processed_data = final_processed_data[:]
