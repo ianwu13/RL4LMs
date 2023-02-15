@@ -17,6 +17,7 @@ from rl4lms.data_pools.custom_text_generation_pools import (
     IWSLT2017EnDe,
     NarrativeQA,
     NegoDialog,
+    NegoPredictAgreedDealData,
     NegoTarget,
     NegoOfflineRLDT,
     ToTTo,
@@ -36,6 +37,7 @@ from rl4lms.envs.text_generation.metric import (
     DiversityMetrics,
     LearnedRewardMetric,
     MeteorMetric,
+    NegoPredictAgreedDealMetrics,
     ParentToTTo,
     Perplexity,
     PollutionMetric,
@@ -110,6 +112,7 @@ class DataPoolRegistry:
         "nego_dialog": NegoDialog,
         "nego_target": NegoTarget,
         "nego_offline_rl_dt": NegoOfflineRLDT,
+        "nego_predict_agreed_deal": NegoPredictAgreedDealData
     }
 
     @classmethod
@@ -175,6 +178,7 @@ class MetricRegistry:
         "causal_perplexity": Perplexity,
         "seq2seq_perplexity": Seq2SeqPerplexity,
         "target_format_and_metrics": TargetFormatAndMetrics,
+        "predict_agreed_deal_metrics": NegoPredictAgreedDealMetrics,
         "target_quality": TargetQualityMetric,
         "cider": CIDERMetric,
         "spice": SpiceMetric,

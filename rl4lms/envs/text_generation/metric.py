@@ -1196,6 +1196,198 @@ class SacreBLEUMetric(BaseMetric):
         metric_dict = {"lexical/sacrebleu": (None, bleu_score)}
         return metric_dict
 
+
+class NegoPredictAgreedDealMetrics(BaseMetric):
+    """
+    Metric used for training the deal prediction classifier from the entire dialogue history. This captures the accuracy and format checking to understand how the target model has been trained.
+    """
+    def __init__(self) -> None:
+        super().__init__()
+
+    @staticmethod
+    def has_good_form(prompt, txt):
+        """Check if the format of the generated text is good."""
+
+        if "<alice>" not in txt or "<bob>" not in txt:
+            return False
+
+        if txt.count("=") != 6:
+            return False
+        
+        if "book" not in txt and "food" not in txt:
+            return False
+        elif "book" in txt:
+            if "food" in txt:
+                return False
+            if "ball" not in txt and "hat" not in txt:
+                return False
+            
+            if txt.count("book=") != 2:
+                return False
+        
+            if txt.count("hat=") != 2:
+                return False
+
+            if txt.count("ball=") != 2:
+                return False
+        elif "food" in txt:
+            if "ball" in txt:
+                return False
+            if "water" not in txt and "firewood" not in txt:
+                return False
+            if txt.count("food=") != 2:
+                return False
+        
+            if txt.count("water=") != 2:
+                return False
+
+            if txt.count("firewood=") != 2:
+                return False
+
+        # counts of the three items.
+        pmpt_items = prompt.split("<history>")[0].strip().split()
+        cnts = []
+        for item in pmpt_items:
+            if "=" in item:
+                cnts.append(int(item.split("=")[-1]))
+        assert len(cnts) == 3
+
+        # all 6 values
+        txt_items = txt.split()
+
+        deal_cnts = []
+        for item in txt_items:
+            if "=" in item:
+                deal_cnts.append(int(item.split("=")[-1]))
+        
+        if len(deal_cnts) != 6:
+            return False
+        
+        if (deal_cnts[0] + deal_cnts[3]) != cnts[0]:
+            return False
+
+        if (deal_cnts[1] + deal_cnts[4]) != cnts[1]:
+            return False
+        
+        if (deal_cnts[2] + deal_cnts[5]) != cnts[2]:
+            return False
+
+        return True
+
+    @staticmethod
+    def get_acc(pred, truth, width):
+        """Get the accuracy +- of the width."""
+
+        allowed_min = truth - width
+        allowed_max = truth + width
+
+        if allowed_min <= pred <= allowed_max:
+            return 1.0
+        else:
+            return 0.0
+
+    def compute_metric_scores(self, prompt, pred, ref):
+        """Compute metric values."""
+
+        pred_items = pred.split("<bob>")[0].split()
+        pred_nums = []
+        for item in pred_items:
+            if "=" in item:
+                pred_nums.append(int(item.split("=")[-1]))
+        assert len(pred_nums) == 3
+        pred_total = sum(pred_nums)
+
+        ref_items = ref.split("<bob>")[0].split()
+        ref_nums = []
+        for item in ref_items:
+            if "=" in item:
+                ref_nums.append(int(item.split("=")[-1]))
+        assert len(ref_nums) == 3
+        ref_total = sum(ref_nums)
+
+        # total count of the items
+        pmpt_items = prompt.split("<history>")[0].strip().split()
+        cnts = []
+        for item in pmpt_items:
+            if "=" in item:
+                cnts.append(int(item.split("=")[-1]))
+        assert len(cnts) == 3
+        total_cnt = sum(cnts)
+
+        # trivial predictions
+        pred_rand = random.choice([ii for ii in range(total_cnt + 1)])
+        pred_mean = total_cnt // 2
+
+        this_metric_dict = {
+            "acc_0": NegoPredictAgreedDealMetrics.get_acc(pred=pred_nums, truth=ref_nums, width=0),
+            "acc_1": NegoPredictAgreedDealMetrics.get_acc(pred=pred_nums, truth=ref_nums, width=1),
+            "acc_2": NegoPredictAgreedDealMetrics.get_acc(pred=pred_nums, truth=ref_nums, width=2),
+
+            "acc_0_rand": NegoPredictAgreedDealMetrics.get_acc(pred=pred_rand, truth=ref_nums, width=0),
+            "acc_1_rand": NegoPredictAgreedDealMetrics.get_acc(pred=pred_rand, truth=ref_nums, width=1),
+            "acc_2_rand": NegoPredictAgreedDealMetrics.get_acc(pred=pred_rand, truth=ref_nums, width=2),
+
+            "acc_0_mean": NegoPredictAgreedDealMetrics.get_acc(pred=pred_mean, truth=ref_nums, width=0),
+            "acc_1_mean": NegoPredictAgreedDealMetrics.get_acc(pred=pred_mean, truth=ref_nums, width=1),
+            "acc_2_mean": NegoPredictAgreedDealMetrics.get_acc(pred=pred_mean, truth=ref_nums, width=2),
+        }
+
+        return this_metric_dict
+
+    def compute(
+        self,
+        prompt_texts: List[str],
+        generated_texts: List[str],
+        reference_texts: List[List[str]],
+        meta_infos: List[Dict[str, Any]] = None,
+        model: PreTrainedModel = None,
+        split_name: str = None,
+    ) -> Tuple[List[float], float]:
+
+        good_forms = []
+        metric_dict = {
+            "acc_0": 0.0,
+            "acc_1": 0.0,
+            "acc_2": 0.0,
+            "acc_0_rand": 0.0,
+            "acc_1_rand": 0.0,
+            "acc_2_rand": 0.0,
+            "acc_0_mean": 0.0,
+            "acc_1_mean": 0.0,
+            "acc_2_mean": 0.0,
+        }
+
+        for prompt, pred, refs in zip(prompt_texts, generated_texts, reference_texts):
+            if not NegoPredictAgreedDealMetrics.has_good_form(prompt, pred):
+                good_forms.append(0)
+                continue
+
+            good_forms.append(1)
+
+            ref = refs[0]
+
+            this_metric_dict = self.compute_metric_scores(prompt, pred, ref)
+
+            for k in this_metric_dict.keys():
+                metric_dict[k] += this_metric_dict[k]
+        
+        good_form_acc = sum(good_forms) / len(generated_texts)
+
+        out_dict = {
+            "pred_deal/format_accuracy": (good_forms, good_form_acc),
+            "pred_deal/total_count": (None, len(generated_texts)),
+            "pred_deal/good_count": (None, sum(good_forms)),
+            }
+
+        for k in metric_dict.keys():
+            if sum(good_forms) > 0:
+                metric_dict[k] = metric_dict[k] / sum(good_forms)
+                out_dict[f"pred_deal/{k}"] = (None, metric_dict[k])
+            else:
+                out_dict[f"pred_deal/{k}"] = (None, -1)
+
+        return out_dict
+
 class TargetFormatAndMetrics(BaseMetric):
     """
     Metric used for training the target model. This captures the RMSE and format checking to understand how the target model has been trained.

@@ -1,3 +1,4 @@
+from rl4lms.data_pools.nego_datasets import DealornodealPredictAgreedDeal
 from rl4lms.data_pools.text_generation_pool import TextGenPool, Sample
 from rl4lms.data_pools.task_utils.totto import preprocess_utils
 from datasets import load_dataset
@@ -698,6 +699,53 @@ class NegoOfflineRLDT(TextGenPool):
         assert new_context[:9] == "<context>"
 
         return new_context
+
+"""
+Data for training a separate outcome prediction model.
+
+Input: item counts + entire dialogue history between alice and bob, with one of them ending the conversation in <selection>.
+Output: alice: food=1, water=2, firewood=3, bob: food=2, water=1, firewood=0
+"""
+class NegoPredictAgreedDealData(TextGenPool):
+    EOU_TOKEN = "<EOU>"
+    @classmethod
+    def prepare(
+        cls,
+        split: str,
+        data_dir: str,
+        dnames: list,
+        ):
+        
+        split = CommonGen.gen_split_name(split)
+
+        samples = []
+        offset = 0
+
+        dname2cls = {
+            # "casino": CaSiNoPredictAgreedDeal,
+            "dealornodeal": DealornodealPredictAgreedDeal,
+        }
+
+        for dname in dnames:
+            dpath = os.path.join(data_dir, dname)
+            dobj = dname2cls[dname](dpath, split)
+            dataset = dobj.load_dataset()
+            
+            for ix, item in enumerate(dataset):
+
+                inp = item["input_seq"]
+                outp = item["response"] + " " + NegoDialog.EOU_TOKEN            
+                sample = Sample(id=offset + ix, 
+                                prompt_or_input_text=inp, 
+                                references=[outp],
+                                )
+ 
+                samples.append(sample)
+            
+            offset = len(samples)
+
+        dp_instance = cls(samples)
+        return dp_instance
 
 class NegoTarget(TextGenPool):
     EOU_TOKEN = "<EOU>"
