@@ -1322,17 +1322,17 @@ class NegoPredictAgreedDealMetrics(BaseMetric):
         pred_mean = total_cnt // 2
 
         this_metric_dict = {
-            "acc_0": NegoPredictAgreedDealMetrics.get_acc(pred=pred_nums, truth=ref_nums, width=0),
-            "acc_1": NegoPredictAgreedDealMetrics.get_acc(pred=pred_nums, truth=ref_nums, width=1),
-            "acc_2": NegoPredictAgreedDealMetrics.get_acc(pred=pred_nums, truth=ref_nums, width=2),
+            "acc_0": NegoPredictAgreedDealMetrics.get_acc(pred=pred_total, truth=ref_total, width=0),
+            "acc_1": NegoPredictAgreedDealMetrics.get_acc(pred=pred_total, truth=ref_total, width=1),
+            "acc_2": NegoPredictAgreedDealMetrics.get_acc(pred=pred_total, truth=ref_total, width=2),
 
-            "acc_0_rand": NegoPredictAgreedDealMetrics.get_acc(pred=pred_rand, truth=ref_nums, width=0),
-            "acc_1_rand": NegoPredictAgreedDealMetrics.get_acc(pred=pred_rand, truth=ref_nums, width=1),
-            "acc_2_rand": NegoPredictAgreedDealMetrics.get_acc(pred=pred_rand, truth=ref_nums, width=2),
+            "acc_0_rand": NegoPredictAgreedDealMetrics.get_acc(pred=pred_rand, truth=ref_total, width=0),
+            "acc_1_rand": NegoPredictAgreedDealMetrics.get_acc(pred=pred_rand, truth=ref_total, width=1),
+            "acc_2_rand": NegoPredictAgreedDealMetrics.get_acc(pred=pred_rand, truth=ref_total, width=2),
 
-            "acc_0_mean": NegoPredictAgreedDealMetrics.get_acc(pred=pred_mean, truth=ref_nums, width=0),
-            "acc_1_mean": NegoPredictAgreedDealMetrics.get_acc(pred=pred_mean, truth=ref_nums, width=1),
-            "acc_2_mean": NegoPredictAgreedDealMetrics.get_acc(pred=pred_mean, truth=ref_nums, width=2),
+            "acc_0_mean": NegoPredictAgreedDealMetrics.get_acc(pred=pred_mean, truth=ref_total, width=0),
+            "acc_1_mean": NegoPredictAgreedDealMetrics.get_acc(pred=pred_mean, truth=ref_total, width=1),
+            "acc_2_mean": NegoPredictAgreedDealMetrics.get_acc(pred=pred_mean, truth=ref_total, width=2),
         }
 
         return this_metric_dict
@@ -1363,7 +1363,7 @@ class NegoPredictAgreedDealMetrics(BaseMetric):
         for prompt, pred, refs in zip(prompt_texts, generated_texts, reference_texts):
 
             pred = pred.replace("alice>", "<alice>").replace("bob>", "<bob>").replace("EOU>","").strip()
-            
+
             if not NegoPredictAgreedDealMetrics.has_good_form(prompt, pred):
                 good_forms.append(0)
                 continue
