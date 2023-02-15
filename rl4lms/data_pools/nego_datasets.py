@@ -31,7 +31,8 @@ class Dataset:
 
         print("-"*10)
         print(f"Dataset opath: {self.opath}")
-        print(f"Raw: {len(self.raw_data)}")
+        if self.raw_data:
+            print(f"Raw: {len(self.raw_data)}")
         print(f"Processed: {len(self.processed_data)}")
         print("-"*10)
 
