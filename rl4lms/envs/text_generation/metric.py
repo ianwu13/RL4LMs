@@ -1371,6 +1371,7 @@ class NegoPredictAgreedDealMetrics(BaseMetric):
             good_forms.append(1)
 
             ref = refs[0]
+            print(pred, ref)
 
             this_metric_dict = self.compute_metric_scores(prompt, pred, ref)
 
