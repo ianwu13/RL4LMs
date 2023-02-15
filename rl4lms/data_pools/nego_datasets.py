@@ -6,6 +6,7 @@ class Dataset:
     def __init__(self, dpath, split):
         self.dpath = dpath
         self.split = split
+        self.raw_data = None
 
         # load data if available
         self.opath = os.path.join(self.dpath, f"{self.split}.csv")
