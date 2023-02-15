@@ -1254,24 +1254,27 @@ class NegoPredictAgreedDealMetrics(BaseMetric):
                 cnts.append(int(item.split("=")[-1]))
         assert len(cnts) == 3
 
-        # all 6 values
-        txt_items = txt.split()
+        try:
+            # all 6 values
+            txt_items = txt.split()
 
-        deal_cnts = []
-        for item in txt_items:
-            if "=" in item:
-                deal_cnts.append(int(item.split("=")[-1]))
-        
-        if len(deal_cnts) != 6:
-            return False
-        
-        if (deal_cnts[0] + deal_cnts[3]) != cnts[0]:
-            return False
+            deal_cnts = []
+            for item in txt_items:
+                if "=" in item:
+                    deal_cnts.append(int(item.split("=")[-1]))
 
-        if (deal_cnts[1] + deal_cnts[4]) != cnts[1]:
-            return False
-        
-        if (deal_cnts[2] + deal_cnts[5]) != cnts[2]:
+            if len(deal_cnts) != 6:
+                return False
+            
+            if (deal_cnts[0] + deal_cnts[3]) != cnts[0]:
+                return False
+
+            if (deal_cnts[1] + deal_cnts[4]) != cnts[1]:
+                return False
+            
+            if (deal_cnts[2] + deal_cnts[5]) != cnts[2]:
+                return False
+        except:
             return False
 
         return True
