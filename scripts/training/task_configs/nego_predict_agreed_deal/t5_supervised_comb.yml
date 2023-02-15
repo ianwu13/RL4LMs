@@ -19,7 +19,7 @@ alg:
     logging_steps: 1000
     num_train_epochs: 30
     weight_decay: 0.01
-    learning_rate: 0.0002
+    learning_rate: 0.00002
     save_total_limit: 1
     report_to: none
   model_type: seq2seq
