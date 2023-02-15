@@ -253,32 +253,16 @@ class CaSiNoPredictAgreedDeal(Dataset):
                 
         assert task_data and cid
 
-        task_dat_you = task_data['issue2youget']
-        task_dat_them = task_data['issue2theyget']
-
         task_dat_alice, task_dat_bob = None, None
         if mapping[cid] == "<alice>":
-            pass
-
-
-
-
-        deal_items = [int(ii.split("=")[-1]) for ii in d_output.split()]
-
-        if "<alice>" == mapping["YOU:"]:
-            outp_seq = f"<alice> book={deal_items[0]} hat={deal_items[1]} ball={deal_items[2]} <bob> book={deal_items[3]} hat={deal_items[4]} ball={deal_items[5]}"
-        elif "<alice>" == mapping["THEM:"]:
-            outp_seq = f"<alice> book={deal_items[3]} hat={deal_items[4]} ball={deal_items[5]} <bob> book={deal_items[0]} hat={deal_items[1]} ball={deal_items[2]}"
+            task_dat_alice, task_dat_bob = task_data['issue2youget'], task_data['issue2theyget']
+        elif mapping[cid] == "<bob>":
+            task_dat_alice, task_dat_bob = task_data['issue2theyget'], task_data['issue2youget']
         else:
             raise ValueError
 
+        outp_seq = f"<alice> food={task_dat_alice['Food']} water={task_dat_alice['Water']} firewood={task_dat_alice['Firewood']} <bob> food={task_dat_bob['Food']} water={task_dat_bob['Water']} firewood={task_dat_bob['Firewood']}"
         return outp_seq
-    
-    def get_submit_deal_sentence(self, task_data):
-        """Get submit deal sentence."""
-        task_dat_you = task_data['issue2youget']
-        task_dat_them = task_data['issue2theyget']
-        return f"let's submit this deal. i get {task_dat_you['Food']} food, {task_dat_you['Water']} water, and {task_dat_you['Firewood']} firewood. you get {task_dat_them['Food']} food, {task_dat_them['Water']} water, and {task_dat_them['Firewood']} firewood."
 
     def get_input_seq(self, count_str, dialogue):
         """Construct the input sequence."""
@@ -291,88 +275,6 @@ class CaSiNoPredictAgreedDeal(Dataset):
 
         return input_seq
 
-    def get_total_points(self, dialogue, aid):
-        """Get the total points scored by aid agent."""
-        
-        agent_info = dialogue["participant_info"][aid]
-        agent_pref = agent_info["value2issue"]
-
-        pref_score = {
-            "food": None,
-            "water": None,
-            "firewood": None,
-        }
-
-        pref_score[agent_pref["High"].lower()] = 5
-        pref_score[agent_pref["Medium"].lower()] = 4
-        pref_score[agent_pref["Low"].lower()] = 3
-
-        # get the deal.
-        my_deal = {
-            "food": -1,
-            "water": -1,
-            "firewood": -1,
-        }
-
-        save_ix = -1
-        for ix, item in enumerate(dialogue["chat_logs"]):
-            if item["text"] == "Submit-Deal":
-                save_ix = ix
-        
-        assert save_ix != -1
-        assert dialogue["chat_logs"][save_ix + 1]["text"] == "Accept-Deal"
-        assert dialogue["chat_logs"][save_ix]["text"] == "Submit-Deal"
-        assert (save_ix + 1) == (len(dialogue["chat_logs"]) - 1)
-
-        # agreement was reached, and save_ix contains the deal.
-        deal_key = "issue2youget"
-        if aid != dialogue["chat_logs"][save_ix]["id"]:
-            deal_key = "issue2theyget"
-        
-        deal_data = dialogue["chat_logs"][save_ix]["task_data"][deal_key]
-        my_deal["food"] = int(deal_data["Food"])
-        my_deal["water"] = int(deal_data["Water"])
-        my_deal["firewood"] = int(deal_data["Firewood"])
-
-        total_points = my_deal["food"]*pref_score["food"] + my_deal["water"]*pref_score["water"] + my_deal["firewood"]*pref_score["firewood"]
-        return total_points
-
-    def get_rtg_seq(self, dialogue, aid, split):
-        """Get the rtg sequence."""
-        
-        total_points = self.get_total_points(dialogue, aid)
-
-        rewards = []
-        for c in dialogue["chat_logs"]:
-            if c["id"] != aid:
-                continue
-            
-            this_rew = 0
-            
-            # for a new message
-            this_rew -= 2
-
-            rewards.append(this_rew)
-
-        if split == "train":
-            
-            if aid == dialogue["chat_logs"][-1]["id"]:
-                # this player makes the deal decision.
-                if dialogue["dial_type"] in ["cs_cd", "ws_cd"]:
-                    rewards[-1] += total_points*3
-            else:
-                # this player submits the deal.
-                if dialogue["dial_type"] in ["cs_cd", "cs_wd"]:
-                    rewards[-1] += total_points*3
-        else:
-            rewards[-1] += total_points*3
-
-        rtgs = []
-        for i in range(len(rewards)):
-            rtgs.append(sum(rewards[i:]))
-
-        return rtgs
-
     def dial_has_exceptions(self, dialogue):
 
         for c in dialogue["chat_logs"]:
@@ -380,105 +282,6 @@ class CaSiNoPredictAgreedDeal(Dataset):
                 return True
         
         return False
-
-    def add_perturb_data(self, dialogues):
-
-        new_dialogues = dialogues[:]
-        for ix in range(len(new_dialogues)):
-            new_dialogues[ix]["dial_type"] = "cs_cd" # correct submit and correct decision.
-        
-        # correct submit and wrong decision.
-        for c in new_dialogues:
-
-            if c["dial_type"] != "cs_cd":
-                continue
-
-            assert c["chat_logs"][-1]["text"] == "Accept-Deal"
-
-            c_pert = copy.deepcopy(c)
-            c_pert["chat_logs"][-1]["text"] == "Reject-Deal"
-            c_pert["dial_type"] = "cs_wd"
-
-            new_dialogues.append(c_pert)
-
-        # wrong deal and wrong decision
-        for c in new_dialogues:
-
-            if c["dial_type"] != "cs_cd":
-                continue
-
-            assert c["chat_logs"][-2]["text"] == "Submit-Deal"
-
-            while True:
-                c_pert = copy.deepcopy(c)
-
-                for issue in ["Food", "Water", "Firewood"]:
-                    assert c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue]
-                    
-                    if random.uniform(0, 1) < 0.5:
-                        wrong_opts = []
-                        for opt in ["0", "1", "2", "3"]:
-                            if opt != c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue]:
-                                wrong_opts.append(opt)
-                    
-                        wrong_opt_selected = random.choice(wrong_opts)
-                        assert wrong_opt_selected != c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue]
-                        c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue] = wrong_opt_selected
-                        c_pert["chat_logs"][-2]["task_data"]["issue2theyget"][issue] = str(3 - int(wrong_opt_selected))
-                
-                f = 0
-                for issue in ["Food", "Water", "Firewood"]:
-                    if c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue] != c["chat_logs"][-2]["task_data"]["issue2youget"][issue]:
-                        f = 1
-                        break
-                
-                if f:
-                    break
-            
-            c_pert["dial_type"] = "ws_wd"
-            new_dialogues.append(c_pert)
-
-        # wrong deal and correct decision
-        for c in new_dialogues:
-
-            if c["dial_type"] != "cs_cd":
-                continue
-
-            assert c["chat_logs"][-2]["text"] == "Submit-Deal"
-
-            while True:
-                c_pert = copy.deepcopy(c)
-
-                for issue in ["Food", "Water", "Firewood"]:
-                    assert c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue]
-                    
-                    if random.uniform(0, 1) < 0.5:
-                        wrong_opts = []
-                        for opt in ["0", "1", "2", "3"]:
-                            if opt != c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue]:
-                                wrong_opts.append(opt)
-                    
-                        wrong_opt_selected = random.choice(wrong_opts)
-                        assert wrong_opt_selected != c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue]
-                        c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue] = wrong_opt_selected
-                        c_pert["chat_logs"][-2]["task_data"]["issue2theyget"][issue] = str(3 - int(wrong_opt_selected))
-                
-                f = 0
-                for issue in ["Food", "Water", "Firewood"]:
-                    if c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue] != c["chat_logs"][-2]["task_data"]["issue2youget"][issue]:
-                        f = 1
-                        break
-                
-                if f:
-                    break
-            
-            assert c["chat_logs"][-1]["text"] == "Accept-Deal"
-            c_pert["chat_logs"][-1]["text"] == "Reject-Deal"
-
-            c_pert["dial_type"] = "ws_cd"
-            new_dialogues.append(c_pert)
-
-        return new_dialogues
 
     def process_each_split(self, split):
         """Process dialogues in the common format.
