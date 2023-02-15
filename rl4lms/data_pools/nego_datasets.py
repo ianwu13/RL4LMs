@@ -220,31 +220,12 @@ class CaSiNoPredictAgreedDeal(Dataset):
         else:
             raise ValueError
 
-    def get_context(self, agent_info):
-        """Get context string."""
-        
-        agent_pref = agent_info["value2issue"]
-        agent_reasons = agent_info['value2reason']
-
-        pref_score = {
-            "food": None,
-            "water": None,
-            "firewood": None,
-        }
-
-        pref_score[agent_pref["High"].lower()] = 5
-        pref_score[agent_pref["Medium"].lower()] = 4
-        pref_score[agent_pref["Low"].lower()] = 3
-
-        target_seq = f"food: 3, {pref_score['food']} water: 3, {pref_score['water']} firewood: 3, {pref_score['firewood']}"
-
-        hp_sentence = f'my highest priority is {agent_pref["High"]} because {agent_reasons["High"]}'
-        mp_sentence = f'my medium priority is {agent_pref["Medium"]} because {agent_reasons["Medium"]}'
-        lp_sentence = f'my lowest priority is {agent_pref["Low"]} because {agent_reasons["Low"]}'
-    
-        cxt = f"<context> <target> {target_seq} <persona> {self.fix_sent(hp_sentence)} {self.fix_sent(mp_sentence)} {self.fix_sent(lp_sentence)}"
-        
-        return cxt
+    def get_count_str(self,):
+        """
+        get the count string.
+        """
+        count_str = f"<counts> food=3 water=3 firewood=3"
+        return count_str
     
     def fix_sent(self, input):
         """Preprocess the utterance."""
@@ -254,6 +235,44 @@ class CaSiNoPredictAgreedDeal(Dataset):
         out = out.lower().strip()
 
         return out
+
+    def get_output_seq(self, chat_logs, mapping):
+        """Get the output str.
+
+        Order: Food, Water, Firewood
+        """
+        
+        task_data = None
+        cid = None
+        for ix, c in enumerate(chat_logs):
+            if c["text"] == "Submit-Deal":
+                assert (ix + 1) == len(chat_logs) - 1
+                task_data = c["task_data"]
+                cid = c["id"]
+                break
+                
+        assert task_data and cid
+
+        task_dat_you = task_data['issue2youget']
+        task_dat_them = task_data['issue2theyget']
+
+        task_dat_alice, task_dat_bob = None, None
+        if mapping[cid] == "<alice>":
+            pass
+
+
+
+
+        deal_items = [int(ii.split("=")[-1]) for ii in d_output.split()]
+
+        if "<alice>" == mapping["YOU:"]:
+            outp_seq = f"<alice> book={deal_items[0]} hat={deal_items[1]} ball={deal_items[2]} <bob> book={deal_items[3]} hat={deal_items[4]} ball={deal_items[5]}"
+        elif "<alice>" == mapping["THEM:"]:
+            outp_seq = f"<alice> book={deal_items[3]} hat={deal_items[4]} ball={deal_items[5]} <bob> book={deal_items[0]} hat={deal_items[1]} ball={deal_items[2]}"
+        else:
+            raise ValueError
+
+        return outp_seq
     
     def get_submit_deal_sentence(self, task_data):
         """Get submit deal sentence."""
@@ -261,20 +280,14 @@ class CaSiNoPredictAgreedDeal(Dataset):
         task_dat_them = task_data['issue2theyget']
         return f"let's submit this deal. i get {task_dat_you['Food']} food, {task_dat_you['Water']} water, and {task_dat_you['Firewood']} firewood. you get {task_dat_them['Food']} food, {task_dat_them['Water']} water, and {task_dat_them['Firewood']} firewood."
 
-    def get_input_seq(self, agent_context, dialogue, rtg_seq):
-        """Construct the input seq from agent_context and dialogue."""
-        
+    def get_input_seq(self, count_str, dialogue):
+        """Construct the input sequence."""
         dial2 = dialogue[:]
         dial2.reverse()
-        dial2 = "".join(dial2)
 
-        # set up rtgs - get the number of times <you> appears in the current
-        # dialogue and then add 1 -> get these many elements from the rtg_seq
-        req_rtgs_count = dial2.count("<you>") + 1
-        req_rtgs = rtg_seq[:req_rtgs_count]
-        req_rtgs = " ".join([str(ii) for ii in req_rtgs])
+        dial2 = " ".join(dial2)
 
-        input_seq = f"<rewards> {req_rtgs} {agent_context} <history>{dial2}".strip()
+        input_seq = f"{count_str} <history> {dial2}".strip()
 
         return input_seq
 
