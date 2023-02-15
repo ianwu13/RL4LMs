@@ -714,7 +714,11 @@ class NegoPredictAgreedDealData(TextGenPool):
         split: str,
         data_dir: str,
         dnames: list,
+        eval_dname: str = "all",
         ):
+        """
+        eval_dname: used to evaluate on specific datasets when more than one data are being used for training the model. can be either a valid dname or "all".
+        """
         
         split = CommonGen.gen_split_name(split)
 
@@ -727,6 +731,11 @@ class NegoPredictAgreedDealData(TextGenPool):
         }
 
         for dname in dnames:
+
+            if split != "train" and eval_dname != "all":
+                if dname != eval_dname:
+                    continue
+
             dpath = os.path.join(data_dir, dname)
             dobj = dname2cls[dname](dpath, split)
             dataset = dobj.load_dataset()
