@@ -535,18 +535,18 @@ class CaSiNoPredictAgreedDeal(Dataset):
                 outp_seq = self.get_output_seq(dialogue["chat_logs"], mapping)
                 processed_data.append(f'"{inp_seq}","{outp_seq}","dummy"\n')
                     
-                    if id == a1:
-                        inp_seq = self.get_input_seq(agent_1_context, dialogue_1[:], rtg_seq_1[:])
-                        processed_data.append(f'"{inp_seq}","<you> {sentence}","{agent_2_context}"\n')
-                        dialogue_1.append(f' <you> {sentence}')
-                        dialogue_2.append(f' <them> {sentence}')
-                    elif id == a2:
-                        inp_seq = self.get_input_seq(agent_2_context, dialogue_2[:], rtg_seq_2[:])
-                        processed_data.append(f'"{inp_seq}","<you> {sentence}","{agent_1_context}"\n')
-                        dialogue_1.append(f' <them> {sentence}')
-                        dialogue_2.append(f' <you> {sentence}')
-                    else:
-                        raise Exception('INVALID AGENT ID')
+                if id == a1:
+                    inp_seq = self.get_input_seq(agent_1_context, dialogue_1[:], rtg_seq_1[:])
+                    processed_data.append(f'"{inp_seq}","<you> {sentence}","{agent_2_context}"\n')
+                    dialogue_1.append(f' <you> {sentence}')
+                    dialogue_2.append(f' <them> {sentence}')
+                elif id == a2:
+                    inp_seq = self.get_input_seq(agent_2_context, dialogue_2[:], rtg_seq_2[:])
+                    processed_data.append(f'"{inp_seq}","<you> {sentence}","{agent_1_context}"\n')
+                    dialogue_1.append(f' <them> {sentence}')
+                    dialogue_2.append(f' <you> {sentence}')
+                else:
+                    raise Exception('INVALID AGENT ID')
 
         # remove duplicates
         final_processed_data = []
