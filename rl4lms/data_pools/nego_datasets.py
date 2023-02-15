@@ -197,3 +197,361 @@ class DealornodealPredictAgreedDeal(Dataset):
         print("de-duplicated processed data", len(processed_data), len(final_processed_data))
 
         self.processed_data = final_processed_data[:]
+
+
+class CaSiNoPredictAgreedDeal(Dataset):
+
+    def load_raw_dialogues(self):
+        """Load raw data from Huggingface."""
+        assert not self.raw_data
+
+        hf_dataset = load_dataset("casino", split="train")
+        
+        self.raw_data = [dd for dd in hf_dataset]
+        assert len(self.raw_data) == 1030, len(self.raw_data)
+
+        #fix as per self.split
+        if self.split == "train":
+            self.raw_data = self.raw_data[:int(0.8*len(self.raw_data))]
+        elif self.split == "validation":
+            self.raw_data = self.raw_data[int(0.8*len(self.raw_data)):int(0.9*len(self.raw_data))]
+        elif self.split == "test":
+            self.raw_data = self.raw_data[int(0.9*len(self.raw_data)):]
+        else:
+            raise ValueError
+
+    def get_context(self, agent_info):
+        """Get context string."""
+        
+        agent_pref = agent_info["value2issue"]
+        agent_reasons = agent_info['value2reason']
+
+        pref_score = {
+            "food": None,
+            "water": None,
+            "firewood": None,
+        }
+
+        pref_score[agent_pref["High"].lower()] = 5
+        pref_score[agent_pref["Medium"].lower()] = 4
+        pref_score[agent_pref["Low"].lower()] = 3
+
+        target_seq = f"food: 3, {pref_score['food']} water: 3, {pref_score['water']} firewood: 3, {pref_score['firewood']}"
+
+        hp_sentence = f'my highest priority is {agent_pref["High"]} because {agent_reasons["High"]}'
+        mp_sentence = f'my medium priority is {agent_pref["Medium"]} because {agent_reasons["Medium"]}'
+        lp_sentence = f'my lowest priority is {agent_pref["Low"]} because {agent_reasons["Low"]}'
+    
+        cxt = f"<context> <target> {target_seq} <persona> {self.fix_sent(hp_sentence)} {self.fix_sent(mp_sentence)} {self.fix_sent(lp_sentence)}"
+        
+        return cxt
+    
+    def fix_sent(self, input):
+        """Preprocess the utterance."""
+        
+        out = input.replace("🙂", "").replace("☹️", "").replace("😮", "").replace("😡", "")
+        out = out.replace("\"","")
+        out = out.lower().strip()
+
+        return out
+    
+    def get_submit_deal_sentence(self, task_data):
+        """Get submit deal sentence."""
+        task_dat_you = task_data['issue2youget']
+        task_dat_them = task_data['issue2theyget']
+        return f"let's submit this deal. i get {task_dat_you['Food']} food, {task_dat_you['Water']} water, and {task_dat_you['Firewood']} firewood. you get {task_dat_them['Food']} food, {task_dat_them['Water']} water, and {task_dat_them['Firewood']} firewood."
+
+    def get_input_seq(self, agent_context, dialogue, rtg_seq):
+        """Construct the input seq from agent_context and dialogue."""
+        
+        dial2 = dialogue[:]
+        dial2.reverse()
+        dial2 = "".join(dial2)
+
+        # set up rtgs - get the number of times <you> appears in the current
+        # dialogue and then add 1 -> get these many elements from the rtg_seq
+        req_rtgs_count = dial2.count("<you>") + 1
+        req_rtgs = rtg_seq[:req_rtgs_count]
+        req_rtgs = " ".join([str(ii) for ii in req_rtgs])
+
+        input_seq = f"<rewards> {req_rtgs} {agent_context} <history>{dial2}".strip()
+
+        return input_seq
+
+    def get_total_points(self, dialogue, aid):
+        """Get the total points scored by aid agent."""
+        
+        agent_info = dialogue["participant_info"][aid]
+        agent_pref = agent_info["value2issue"]
+
+        pref_score = {
+            "food": None,
+            "water": None,
+            "firewood": None,
+        }
+
+        pref_score[agent_pref["High"].lower()] = 5
+        pref_score[agent_pref["Medium"].lower()] = 4
+        pref_score[agent_pref["Low"].lower()] = 3
+
+        # get the deal.
+        my_deal = {
+            "food": -1,
+            "water": -1,
+            "firewood": -1,
+        }
+
+        save_ix = -1
+        for ix, item in enumerate(dialogue["chat_logs"]):
+            if item["text"] == "Submit-Deal":
+                save_ix = ix
+        
+        assert save_ix != -1
+        assert dialogue["chat_logs"][save_ix + 1]["text"] == "Accept-Deal"
+        assert dialogue["chat_logs"][save_ix]["text"] == "Submit-Deal"
+        assert (save_ix + 1) == (len(dialogue["chat_logs"]) - 1)
+
+        # agreement was reached, and save_ix contains the deal.
+        deal_key = "issue2youget"
+        if aid != dialogue["chat_logs"][save_ix]["id"]:
+            deal_key = "issue2theyget"
+        
+        deal_data = dialogue["chat_logs"][save_ix]["task_data"][deal_key]
+        my_deal["food"] = int(deal_data["Food"])
+        my_deal["water"] = int(deal_data["Water"])
+        my_deal["firewood"] = int(deal_data["Firewood"])
+
+        total_points = my_deal["food"]*pref_score["food"] + my_deal["water"]*pref_score["water"] + my_deal["firewood"]*pref_score["firewood"]
+        return total_points
+
+    def get_rtg_seq(self, dialogue, aid, split):
+        """Get the rtg sequence."""
+        
+        total_points = self.get_total_points(dialogue, aid)
+
+        rewards = []
+        for c in dialogue["chat_logs"]:
+            if c["id"] != aid:
+                continue
+            
+            this_rew = 0
+            
+            # for a new message
+            this_rew -= 2
+
+            rewards.append(this_rew)
+
+        if split == "train":
+            
+            if aid == dialogue["chat_logs"][-1]["id"]:
+                # this player makes the deal decision.
+                if dialogue["dial_type"] in ["cs_cd", "ws_cd"]:
+                    rewards[-1] += total_points*3
+            else:
+                # this player submits the deal.
+                if dialogue["dial_type"] in ["cs_cd", "cs_wd"]:
+                    rewards[-1] += total_points*3
+        else:
+            rewards[-1] += total_points*3
+
+        rtgs = []
+        for i in range(len(rewards)):
+            rtgs.append(sum(rewards[i:]))
+
+        return rtgs
+
+    def dial_has_exceptions(self, dialogue):
+
+        for c in dialogue["chat_logs"]:
+            if c["text"] in ["Reject-Deal", "Walk-Away"]:
+                return True
+        
+        return False
+
+    def add_perturb_data(self, dialogues):
+
+        new_dialogues = dialogues[:]
+        for ix in range(len(new_dialogues)):
+            new_dialogues[ix]["dial_type"] = "cs_cd" # correct submit and correct decision.
+        
+        # correct submit and wrong decision.
+        for c in new_dialogues:
+
+            if c["dial_type"] != "cs_cd":
+                continue
+
+            assert c["chat_logs"][-1]["text"] == "Accept-Deal"
+
+            c_pert = copy.deepcopy(c)
+            c_pert["chat_logs"][-1]["text"] == "Reject-Deal"
+            c_pert["dial_type"] = "cs_wd"
+
+            new_dialogues.append(c_pert)
+
+        # wrong deal and wrong decision
+        for c in new_dialogues:
+
+            if c["dial_type"] != "cs_cd":
+                continue
+
+            assert c["chat_logs"][-2]["text"] == "Submit-Deal"
+
+            while True:
+                c_pert = copy.deepcopy(c)
+
+                for issue in ["Food", "Water", "Firewood"]:
+                    assert c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue]
+                    
+                    if random.uniform(0, 1) < 0.5:
+                        wrong_opts = []
+                        for opt in ["0", "1", "2", "3"]:
+                            if opt != c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue]:
+                                wrong_opts.append(opt)
+                    
+                        wrong_opt_selected = random.choice(wrong_opts)
+                        assert wrong_opt_selected != c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue]
+                        c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue] = wrong_opt_selected
+                        c_pert["chat_logs"][-2]["task_data"]["issue2theyget"][issue] = str(3 - int(wrong_opt_selected))
+                
+                f = 0
+                for issue in ["Food", "Water", "Firewood"]:
+                    if c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue] != c["chat_logs"][-2]["task_data"]["issue2youget"][issue]:
+                        f = 1
+                        break
+                
+                if f:
+                    break
+            
+            c_pert["dial_type"] = "ws_wd"
+            new_dialogues.append(c_pert)
+
+        # wrong deal and correct decision
+        for c in new_dialogues:
+
+            if c["dial_type"] != "cs_cd":
+                continue
+
+            assert c["chat_logs"][-2]["text"] == "Submit-Deal"
+
+            while True:
+                c_pert = copy.deepcopy(c)
+
+                for issue in ["Food", "Water", "Firewood"]:
+                    assert c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue]
+                    
+                    if random.uniform(0, 1) < 0.5:
+                        wrong_opts = []
+                        for opt in ["0", "1", "2", "3"]:
+                            if opt != c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue]:
+                                wrong_opts.append(opt)
+                    
+                        wrong_opt_selected = random.choice(wrong_opts)
+                        assert wrong_opt_selected != c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue]
+                        c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue] = wrong_opt_selected
+                        c_pert["chat_logs"][-2]["task_data"]["issue2theyget"][issue] = str(3 - int(wrong_opt_selected))
+                
+                f = 0
+                for issue in ["Food", "Water", "Firewood"]:
+                    if c_pert["chat_logs"][-2]["task_data"]["issue2youget"][issue] != c["chat_logs"][-2]["task_data"]["issue2youget"][issue]:
+                        f = 1
+                        break
+                
+                if f:
+                    break
+            
+            assert c["chat_logs"][-1]["text"] == "Accept-Deal"
+            c_pert["chat_logs"][-1]["text"] == "Reject-Deal"
+
+            c_pert["dial_type"] = "ws_cd"
+            new_dialogues.append(c_pert)
+
+        return new_dialogues
+
+    def process_each_split(self, split):
+        """Process dialogues in the common format.
+        
+        For each instance, fill:
+            input_seq: item counts + reversed history (alice / bob),
+            response: deal counts for alice and bob
+            partner_cxt: partner_cxt for reference - who cares.
+
+        For Casino, each raw data corresponds to a dialogue from both the perspectives.
+        
+        For each instance, we will assign Alice and Bob in both the possible ways. Then at the end, we remove duplicates (although in this case, there should not be any).
+
+        Ultimately, from each dialogue, we only contain two instances.
+
+        """
+        
+        all_dialogues = []
+        
+        print(len(self.split_data[split]))
+        for dial in self.split_data[split]:
+            # if the negotiation did not reach agreement or contains reject sequences, ignore
+            if self.dial_has_exceptions(dial):
+                continue
+            all_dialogues.append(dial)
+        print("remove exceptions", len(all_dialogues))
+
+        #add perturbed data to train split.
+        if split == "train" and self.add_perturbs:
+            all_dialogues = self.add_perturb_data(all_dialogues)
+
+        print("add perturbs", len(all_dialogues))
+
+        processed_data = []
+
+        a1 = "mturk_agent_1"
+        a2 = "mturk_agent_2"
+        
+        for dialogue in tqdm(all_dialogues):
+            
+            agent_1_context = self.get_context(dialogue["participant_info"][a1])
+            agent_2_context = self.get_context(dialogue["participant_info"][a2])
+
+            dialogue_1 = []
+            dialogue_2 = []
+
+            # Get the rtg sequence of both the speakers
+            rtg_seq_1 = self.get_rtg_seq(dialogue, a1, split)
+            rtg_seq_2 = self.get_rtg_seq(dialogue, a2, split)
+
+            # Process all utterances in dialogue
+            for c in dialogue['chat_logs']:
+                if c['text'] == 'Submit-Deal':
+                    sentence = self.get_submit_deal_sentence(c['task_data'])
+                elif c['text'] == 'Accept-Deal':
+                    sentence = ACCEPT_DEAL_SENTENCE
+                elif c['text'] == 'Reject-Deal':
+                    sentence = REJECT_DEAL_SENTENCE
+                elif c['text'] == 'Walk-Away':
+                    raise ValueError
+                    sentence = WALKAWAY_SENTENCE
+                else:
+                    sentence = self.fix_sent(c['text'])
+                
+                id = c['id']
+                if id == a1:
+                    inp_seq = self.get_input_seq(agent_1_context, dialogue_1[:], rtg_seq_1[:])
+                    processed_data.append(f'"{inp_seq}","<you> {sentence}","{agent_2_context}"\n')
+                    dialogue_1.append(f' <you> {sentence}')
+                    dialogue_2.append(f' <them> {sentence}')
+                elif id == a2:
+                    inp_seq = self.get_input_seq(agent_2_context, dialogue_2[:], rtg_seq_2[:])
+                    processed_data.append(f'"{inp_seq}","<you> {sentence}","{agent_1_context}"\n')
+                    dialogue_1.append(f' <them> {sentence}')
+                    dialogue_2.append(f' <you> {sentence}')
+                else:
+                    raise Exception('INVALID AGENT ID')
+
+        # remove duplicates
+        final_processed_data = []
+        pd_set = set()
+        for pd in processed_data:
+            if pd in pd_set:
+                continue
+            final_processed_data.append(pd)
+            pd_set.add(pd)
+
+        print("dups", len(processed_data), len(final_processed_data))
+        return final_processed_data

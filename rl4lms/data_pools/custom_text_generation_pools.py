@@ -1,4 +1,4 @@
-from rl4lms.data_pools.nego_datasets import DealornodealPredictAgreedDeal
+from rl4lms.data_pools.nego_datasets import CaSiNoPredictAgreedDeal, DealornodealPredictAgreedDeal
 from rl4lms.data_pools.text_generation_pool import TextGenPool, Sample
 from rl4lms.data_pools.task_utils.totto import preprocess_utils
 from datasets import load_dataset
@@ -722,7 +722,7 @@ class NegoPredictAgreedDealData(TextGenPool):
         offset = 0
 
         dname2cls = {
-            # "casino": CaSiNoPredictAgreedDeal,
+            "casino": CaSiNoPredictAgreedDeal,
             "dealornodeal": DealornodealPredictAgreedDeal,
         }
 

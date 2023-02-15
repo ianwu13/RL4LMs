@@ -1208,6 +1208,8 @@ class NegoPredictAgreedDealMetrics(BaseMetric):
     def has_good_form(prompt, txt):
         """Check if the format of the generated text is good."""
 
+        txt = txt.replace("alice>", "<alice>").replace("bob>", "<bob>").replace("EOU>","").strip()
+
         if "<alice>" not in txt or "<bob>" not in txt:
             return False
 
