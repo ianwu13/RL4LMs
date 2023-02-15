@@ -61,8 +61,11 @@ class Dataset:
 
         self.print_stats()
 
-        assert self.processed_data
-        return self.processed_data
+        # load data from file in dict format.
+        assert os.path.exists(self.opath)
+        data_dicts = load_dataset("csv", data_files={self.split: self.opath})[self.split]
+
+        return data_dicts
 
 class DealornodealPredictAgreedDeal(Dataset):
 
