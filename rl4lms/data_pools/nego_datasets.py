@@ -283,7 +283,7 @@ class CaSiNoPredictAgreedDeal(Dataset):
         
         return False
 
-    def process_each_split(self, split):
+    def process_each_split(self):
         """Process dialogues in the common format.
         
         For each instance, fill:
