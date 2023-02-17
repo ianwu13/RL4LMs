@@ -1295,7 +1295,7 @@ class NegoPredictAgreedDealMetrics(BaseMetric):
 
         f = 1
         for p, r in zip(pred_ind, truth_ind):
-            if p != r:
+            if int(p) != r:
                 f = 0
                 break
         if f:
