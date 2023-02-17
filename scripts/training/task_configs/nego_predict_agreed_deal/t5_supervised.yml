@@ -9,13 +9,13 @@ datapool:
   id: nego_predict_agreed_deal
   args:
     data_dir: "/home/ICT2000/chawla/nego_rl/data/nego_predict_agreed_deal/"
-    dnames: ["dealornodeal"]
+    dnames: ["casino"]
 
 alg:
   id: supervised
   training_args:
     per_device_train_batch_size: 16
-    logging_steps: 1000 # 256
+    logging_steps: 256 # 256, 1000
     num_train_epochs: 30
     weight_decay: 0.01
     learning_rate: 0.0002
