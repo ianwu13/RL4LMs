@@ -31,6 +31,8 @@ CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=5 python3 bot_bot_interaction/main.p
 
 CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=4 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_offline_rl_dt/t5_supervised_combined_no_rl_only_submits.yml --base_path_to_store_results ../logs/ --experiment_name comb_no_rl_only_submits_bs16
 
-CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=1 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_predict_agreed_deal/t5_supervised.yml --base_path_to_store_results ../logs/ --experiment_name predict_deal_dnd1
+CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=4 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_predict_agreed_deal/t5_supervised.yml --base_path_to_store_results ../logs/ --experiment_name predict_deal_dnd1
 
 CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=1 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_predict_agreed_deal/t5_supervised_comb.yml --base_path_to_store_results ../logs/ --experiment_name predict_deal_comb1_lr2e4
+
+CUDA_LAUNCH_BLOCKING=1 CUDA_VISIBLE_DEVICES=4 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/nego_predict_agreed_deal/t5_supervised.yml --base_path_to_store_results ../logs/ --experiment_name predict_deal_dnd1
