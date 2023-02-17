@@ -1289,6 +1289,20 @@ class NegoPredictAgreedDealMetrics(BaseMetric):
         else:
             return 0.0
 
+    @staticmethod
+    def get_acc_0_ind(pred_ind, truth_ind):
+        """Get the accuracy at 0 level individually."""
+
+        f = 1
+        for p, r in zip(pred_ind, truth_ind):
+            if p != r:
+                f = 0
+                break
+        if f:
+            return 1.0
+        else:
+            return 0.0
+
     def compute_metric_scores(self, prompt, pred, ref):
         """Compute metric values."""
 
@@ -1315,21 +1329,29 @@ class NegoPredictAgreedDealMetrics(BaseMetric):
             if "=" in item:
                 cnts.append(int(item.split("=")[-1]))
         assert len(cnts) == 3
-        total_cnt = sum(cnts)
 
         # trivial predictions
-        pred_rand = random.choice([ii for ii in range(total_cnt + 1)])
-        pred_mean = total_cnt // 2
+        pred_rand_ind, pred_mean_ind = [], []
+        
+        for cnt in cnts:
+            pred_rand_ind.append(random.choice([ii for ii in range(cnt + 1)]))
+            pred_mean_ind.append(cnt / 2)
+        
+        pred_rand = sum(pred_rand_ind)
+        pred_mean = int(sum(pred_mean_ind))
 
         this_metric_dict = {
+            "acc_0_ind": NegoPredictAgreedDealMetrics.get_acc_0_ind(pred_ind=pred_nums, truth_ind=ref_nums),
             "acc_0": NegoPredictAgreedDealMetrics.get_acc(pred=pred_total, truth=ref_total, width=0),
             "acc_1": NegoPredictAgreedDealMetrics.get_acc(pred=pred_total, truth=ref_total, width=1),
             "acc_2": NegoPredictAgreedDealMetrics.get_acc(pred=pred_total, truth=ref_total, width=2),
 
+            "acc_0_ind_rand": NegoPredictAgreedDealMetrics.get_acc_0_ind(pred_ind=pred_rand_ind, truth_ind=ref_nums),
             "acc_0_rand": NegoPredictAgreedDealMetrics.get_acc(pred=pred_rand, truth=ref_total, width=0),
             "acc_1_rand": NegoPredictAgreedDealMetrics.get_acc(pred=pred_rand, truth=ref_total, width=1),
             "acc_2_rand": NegoPredictAgreedDealMetrics.get_acc(pred=pred_rand, truth=ref_total, width=2),
 
+            "acc_0_ind_mean": NegoPredictAgreedDealMetrics.get_acc_0_ind(pred_ind=pred_mean_ind, truth_ind=ref_nums),
             "acc_0_mean": NegoPredictAgreedDealMetrics.get_acc(pred=pred_mean, truth=ref_total, width=0),
             "acc_1_mean": NegoPredictAgreedDealMetrics.get_acc(pred=pred_mean, truth=ref_total, width=1),
             "acc_2_mean": NegoPredictAgreedDealMetrics.get_acc(pred=pred_mean, truth=ref_total, width=2),
@@ -1349,12 +1371,15 @@ class NegoPredictAgreedDealMetrics(BaseMetric):
 
         good_forms = []
         metric_dict = {
+            "acc_0_ind": 0.0,
             "acc_0": 0.0,
             "acc_1": 0.0,
             "acc_2": 0.0,
+            "acc_0_ind_rand": 0.0,
             "acc_0_rand": 0.0,
             "acc_1_rand": 0.0,
             "acc_2_rand": 0.0,
+            "acc_0_ind_mean": 0.0,
             "acc_0_mean": 0.0,
             "acc_1_mean": 0.0,
             "acc_2_mean": 0.0,
