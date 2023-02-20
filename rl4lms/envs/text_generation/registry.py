@@ -17,6 +17,7 @@ from rl4lms.data_pools.custom_text_generation_pools import (
     IWSLT2017EnDe,
     NarrativeQA,
     NegoDialog,
+    NegoDialogSel,
     NegoPredictAgreedDealData,
     NegoTarget,
     NegoOfflineRLDT,
@@ -112,7 +113,8 @@ class DataPoolRegistry:
         "nego_dialog": NegoDialog,
         "nego_target": NegoTarget,
         "nego_offline_rl_dt": NegoOfflineRLDT,
-        "nego_predict_agreed_deal": NegoPredictAgreedDealData
+        "nego_predict_agreed_deal": NegoPredictAgreedDealData,
+        "nego_dialog_sel": NegoDialogSel,
     }
 
     @classmethod

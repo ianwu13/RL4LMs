@@ -1,4 +1,4 @@
-from rl4lms.data_pools.nego_datasets import CaSiNoPredictAgreedDeal, DealornodealPredictAgreedDeal
+from rl4lms.data_pools.nego_datasets import CaSiNoPredictAgreedDeal, CaSiNoSupGenSel, DealornodealPredictAgreedDeal, DealornodealSupGenSel
 from rl4lms.data_pools.text_generation_pool import TextGenPool, Sample
 from rl4lms.data_pools.task_utils.totto import preprocess_utils
 from datasets import load_dataset
@@ -755,6 +755,66 @@ class NegoPredictAgreedDealData(TextGenPool):
 
         dp_instance = cls(samples)
         return dp_instance
+
+"""
+Data for training the generation model with <selection> utterances.
+
+Dialog: response generation model
+Sel: the model only generates <selection> as the end of conversation marker.
+
+Input: agent context + dialogue history
+Output: the next response - either contains the utterance or just the end of conversation marker (<selection>)
+"""
+class NegoDialogSel(TextGenPool):
+    EOU_TOKEN = "<EOU>"
+    @classmethod
+    def prepare(
+        cls,
+        split: str,
+        data_dir: str,
+        dnames: list,
+        eval_dname: str = "all",
+        ):
+        """
+        eval_dname: used to evaluate on specific datasets when more than one data are being used for training the model. can be either a valid dname or "all".
+        """
+        
+        split = CommonGen.gen_split_name(split)
+
+        samples = []
+        offset = 0
+
+        dname2cls = {
+            "casino": CaSiNoSupGenSel,
+            "dealornodeal": DealornodealSupGenSel,
+        }
+
+        for dname in dnames:
+
+            if split != "train" and eval_dname != "all":
+                if dname != eval_dname:
+                    continue
+
+            dpath = os.path.join(data_dir, dname)
+            dobj = dname2cls[dname](dpath, split)
+            dataset = dobj.load_dataset()
+            
+            for ix, item in enumerate(dataset):
+
+                inp = item["input_seq"]
+                outp = item["response"] + " " + NegoDialog.EOU_TOKEN            
+                sample = Sample(id=offset + ix, 
+                                prompt_or_input_text=inp, 
+                                references=[outp],
+                                )
+ 
+                samples.append(sample)
+            
+            offset = len(samples)
+
+        dp_instance = cls(samples)
+        return dp_instance
+
 
 class NegoTarget(TextGenPool):
     EOU_TOKEN = "<EOU>"
