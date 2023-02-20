@@ -9,14 +9,14 @@ datapool:
   id: nego_dialog_sel
   args:
     data_dir: "/home/ICT2000/chawla/nego_rl/data/nego_dialog_sel/"
-    dnames: ["casino"]
-    eval_dname: "all" # either use "all" or a specific dname
+    dnames: ["casino", "dealornodeal"]
+    eval_dname: "casino" # either use "all" or a specific dname
 
 alg:
   id: supervised
   training_args:
     per_device_train_batch_size: 16
-    logging_steps: 256 # 715
+    logging_steps: 715 # 256, 715
     num_train_epochs: 5
     weight_decay: 0.01
     learning_rate: 0.00002
