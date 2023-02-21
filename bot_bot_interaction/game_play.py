@@ -91,13 +91,21 @@ class GamePlay:
     def conv_done(self, conv):
         """Check if the conversation is done or not."""
         
-        if conv["utts"][-1]["resp"] in ["i accept this deal.", "i reject this deal."]:
+        if conv["utts"][-1]["resp"] == "<selection>":
             return True
         
         return False
 
     def get_conv_results(self, conv):
-        """Compute the results from a single conv."""
+        """Compute the results from a single conv.
+        
+        Per agent metrics
+        avg # of words, points scored.
+
+        Joint metrics
+        Conv length, combined points, some measure of optimality (pareto optimal - may be just iterate over all possible divisions -- find the maximum joint points possible and compare how close is the joint points to it), indicator for finished or not.
+        
+        """
         return {}
 
     def save_overall_results(self):
