@@ -1,7 +1,9 @@
 import json
 import os
 import random
-from tqdm import tqdm # type: ignore
+from tqdm import tqdm
+
+from bot_bot_interaction.predict_agreed_deal import PredictAgreedDeal
 
 class GamePlay:
     def __init__(self, config, agents) -> None:
@@ -10,6 +12,8 @@ class GamePlay:
         self.agents = agents
 
         self.setup_cxts()
+
+        self.predict_deal_obj = PredictAgreedDeal(self.config)
 
     def game_play(self):
         """Make the two models interact with each other and store the logs."""
@@ -96,6 +100,42 @@ class GamePlay:
         
         return False
 
+    def get_pref_values(self, cxt):
+        """Get issue-wise preference values from the given cxt."""
+        items = cxt.strip().split()
+        assert len(items) == 11
+
+        i1_c, i2_c, i3_c = int(items[3]), int(items[6].rstrip(",")), int(items[9])
+        pps = [i1_c, i2_c, i3_c]
+
+        issues = None
+        if "book" in cxt:
+            issues = ["book", "hat", "ball"]
+        else:
+            issues = ["food", "water", "firewood"]
+        
+        prefs = {}
+
+        for iss, pp in zip(issues, pps):
+            prefs[iss] = pp
+
+        return prefs
+
+    def compute_points_scored(self, prefs, deal, mname):
+        """Compute the points scored."""
+
+        points = 0
+        for issue, p in prefs.items():
+            points += deal[mname][issue]*p
+
+        return points
+
+    def get_all_deal_points(self, cxts):
+        pass
+
+    def check_pareto_optimal(self, all_deal_points, deal):
+        pass
+
     def get_conv_results(self, conv):
         """Compute the results from a single conv.
         
@@ -103,10 +143,74 @@ class GamePlay:
         avg # of words, points scored.
 
         Joint metrics
-        Conv length, combined points, some measure of optimality (pareto optimal - may be just iterate over all possible divisions -- find the maximum joint points possible and compare how close is the joint points to it), indicator for finished or not.
+        Conv length, whether agreed deal was detected, combined points, pareto_optimal, indicator for finished or not.
         
+            conv = {
+                "cxts": {},
+                "utts": [],
+                "results": {},
+            }
         """
-        return {}
+
+        results = {
+            "per_model": {},
+            "joint": {},
+        }
+
+        if conv["utts"][-1]["resp"] == "<selection>":
+            results["joint"]["conv_finished"] = 1
+        else:
+            results["joint"]["conv_finished"] = 0
+            return results
+
+        # for each mname - get the issue-wise counts for each issue.
+        deal = self.predict_deal_obj.get_deal(conv)
+
+        # compute per model metrics.
+        for mname in conv["cxts"].keys():
+            
+            results["per_model"][mname] = {}
+
+            #no of words
+            num_words = []
+            for utt in conv["utts"]:
+                if conv["name"] == mname:
+                    num_words.append(len(utt["resp"].split()))
+            
+            results["per_model"][mname]["num_words"] = sum(num_words) / len(num_words)
+
+            if deal:
+
+                # get issue-wise pref values
+                prefs = self.get_pref_values(conv["cxts"][mname])
+
+                # get the points scored
+                points = self.compute_points_scored(prefs, deal,mname)
+
+                # save
+                results["per_model"][mname]["points"]  = points
+        
+        # compute joint metrics
+        results["joint"]["num_utts"] = len(conv["utts"])
+
+        if deal:
+            results["joint"]["deal_detected"] = 1
+
+            joint_points = 0
+            for mname in conv["cxts"].keys():
+                joint_points += results["per_model"][mname]["points"]
+            results["joint"]["joint_points"] = joint_points
+            
+            all_deal_points = self.get_all_deal_points(conv["cxts"])
+            
+            # just like here: https://github.com/facebookresearch/end-to-end-negotiator/blob/bbb93bbf00f69fced75d5c0d22e855bda07c9b78/src/eval_selfplay.py#L117
+            is_pareto_optimal = self.check_pareto_optimal(all_deal_points, deal)
+            
+            results["joint"]["pareto_optimal"] = is_pareto_optimal
+        else:
+            results["joint"]["deal_detected"] = 0
+
+        return joint_points
 
     def save_overall_results(self):
         """Compute the results from all the convs and store to a file."""

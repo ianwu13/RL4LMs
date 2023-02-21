@@ -78,6 +78,7 @@ class SupervisedAgent(Agent):
                                         truncation=True)
         resp = resp.replace("<unk>you>", "").replace("<unk>EOU>", "").strip()
         resp = resp.replace("<pad>", "").replace("</s>", "").strip()
+        resp = resp.replace("selection>", "<selection>").strip()
 
         # add response to the start of the history.
         self.input_seq = self.input_seq.replace("<history>", f"<history> <you> {resp}")
@@ -157,6 +158,7 @@ class OfflineRLAgent(Agent):
                                         truncation=True)
         resp = resp.replace("<unk>you>", "").replace("<unk>EOU>", "").strip()
         resp = resp.replace("<pad>", "").replace("</s>", "").strip()
+        resp = resp.replace("selection>", "<selection>").strip()
 
         # add response to the start of the history.
         self.input_seq = self.input_seq.replace("<history>", f"<history> <you> {resp}")
