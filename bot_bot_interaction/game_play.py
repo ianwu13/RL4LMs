@@ -103,7 +103,7 @@ class GamePlay:
 
         for item in cxt_pair_set:
             reverse_item = f"{item.split('$$$')[1]}$$${item.split('$$$')[0]}"
-            assert reverse_item not in cxt_pair_set
+            assert reverse_item not in cxt_pair_set, f"{item} --- {reverse_item}"
 
         cxt_pairs = sorted(list(cxt_pair_set))
         random.shuffle(cxt_pairs)
