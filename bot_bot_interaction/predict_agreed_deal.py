@@ -193,14 +193,14 @@ class PredictAgreedDeal:
 
         input_ids = self.tokenizer(input_seq, return_tensors="pt", truncation=True, padding=True, max_length=self.input_max_length).input_ids
 
-        out_encs = self.model.generate(input_ids,
+        out_encs = self.model.generate(input_ids.to(self.device),
                     num_beams=self.num_beams,
                     do_sample=self.do_sample, 
                     max_new_tokens=self.max_new_tokens,
                     min_length=self.min_length
                     )
 
-        pred = self.format_resp(self.tokenizer.decode(out_encs[0],
+        pred = self.format_resp(self.tokenizer.decode(out_encs[0].to("cpu"),
                                     max_length=self.max_new_tokens,
                                     truncation=True))
 
