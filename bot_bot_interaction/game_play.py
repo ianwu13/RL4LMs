@@ -309,7 +309,7 @@ class GamePlay:
             #no of words
             num_words = []
             for utt in conv["utts"]:
-                if conv["name"] == mname:
+                if utt["name"] == mname:
                     num_words.append(len(utt["resp"].split()))
             
             results["per_model"][mname]["num_words"] = sum(num_words) / len(num_words)
