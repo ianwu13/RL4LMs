@@ -85,7 +85,7 @@ class PredictAgreedDeal:
         """Extract the deal from the model prediction."""
 
         deal = {}
-        alice_stuff, bob_stuff = pred.split("<bob>")[0].strip(), pred.split("<bob>")[-1].strip()
+        alice_stuff, bob_stuff = pred.split("<bob>")[0].strip().split(), pred.split("<bob>")[-1].strip().split()
 
         # alice_stuff
         deal[ano2mod["<alice>"]] = {}
