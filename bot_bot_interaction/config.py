@@ -6,12 +6,12 @@ class Config:
         
         # Step 1: Give the names of the model directories under the log folder.
         self.model_names = [
-            "nds_dnd1",
+            "ndsord_dnd1",
             "nds_dnd1",
         ]
 
         # Step 2: Give the types of these two models in the same order, from ["supervised", "offline_rl"]
-        self.model_types = ["supervised", "supervised"]
+        self.model_types = ["offline_rl", "supervised"]
         assert len(self.model_types) == len(self.model_names) == 2
 
         # Step 3: Give the path to the dataset for extracting initial agent contexts
