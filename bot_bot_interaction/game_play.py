@@ -366,6 +366,7 @@ class GamePlay:
             "joint": {},
         }
 
+        print(self.all_convs[0])
         mnames = list(self.all_convs[0]["results"]["per_model"].keys())
 
         for mname in mnames:
