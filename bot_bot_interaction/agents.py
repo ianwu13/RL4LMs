@@ -77,7 +77,7 @@ class SupervisedAgent(Agent):
                                         max_length=self.max_new_tokens,
                                         truncation=True)
         resp = resp.replace("<unk>you>", "").replace("<unk>EOU>", "").strip()
-        resp = resp.replace("<pad>", "").replace("</s>", "").strip()
+        resp = resp.replace("<pad>", "").replace("</s>", "").replace("<unk>","").strip()
         resp = resp.replace("selection>", "<selection>").strip()
 
         # add response to the start of the history.
@@ -157,7 +157,7 @@ class OfflineRLAgent(Agent):
                                         max_length=self.max_new_tokens,
                                         truncation=True)
         resp = resp.replace("<unk>you>", "").replace("<unk>EOU>", "").strip()
-        resp = resp.replace("<pad>", "").replace("</s>", "").strip()
+        resp = resp.replace("<pad>", "").replace("</s>", "").replace("<unk>","").strip()
         resp = resp.replace("selection>", "<selection>").strip()
 
         # add response to the start of the history.
