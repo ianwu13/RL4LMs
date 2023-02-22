@@ -390,6 +390,9 @@ class GamePlay:
                 overall_results["per_model"][mname]["points"] = sum(points) / len(points)
         
         # joint
+
+        overall_results["joint"]["num_convo"] = len(self.all_convs)
+         
         conv_finished, deal_detected, num_utts, joint_points, pareto_optimal = [], [], [], [], []
         for conv in self.all_convs:
             conv_finished.append(conv["results"]["joint"]["conv_finished"])
