@@ -18,7 +18,7 @@ class Config:
         self.dataset_path = "/home/ICT2000/chawla/nego_rl/data/nego_dialog_sel_offline_rl_dt/dealornodeal/validation.csv"
 
         # Step 4: Define interaction params
-        self.num_convs = 300 # total conversations to be logged.
+        self.num_convs = 10 # total conversations to be logged.
         self.max_utts = 20 # max utterances in one conversation - hard stop.
         assert not self.num_convs % 2
         
