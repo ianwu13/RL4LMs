@@ -91,7 +91,7 @@ class GamePlay:
             assert len(items) == 3
 
             cxt1 = items[1].split("<history>")[0].strip()
-            cxt2 = items[2].strip()
+            cxt2 = items[2].replace("\"","").strip()
 
             opt1, opt2 = f"{cxt1}$$${cxt2}", f"{cxt2}$$${cxt1}"
 
@@ -132,12 +132,6 @@ class GamePlay:
         
         self.chosen_cxt_pairs = final_cxt_pairs[:]
         print("Required cxt pairs loaded from file.")
-        
-    def choose_agent_contexts(self):
-        """Return a list of two randomly chosen contexts."""
-        ag_cxts = random.choice(self.all_cxt_pairs).split("$$$")
-        assert len(ag_cxts) == 2
-        return ag_cxts
 
     def conv_done(self, conv):
         """Check if the conversation is done or not."""
