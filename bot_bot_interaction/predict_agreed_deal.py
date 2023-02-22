@@ -81,7 +81,7 @@ class PredictAgreedDeal:
         
         return resp
 
-    def extract_deal(pred, ano2mod):
+    def extract_deal(self, pred, ano2mod):
         """Extract the deal from the model prediction."""
 
         deal = {}
