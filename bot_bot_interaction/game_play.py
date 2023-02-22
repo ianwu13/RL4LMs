@@ -279,6 +279,7 @@ class GamePlay:
         - points
 
         joint:
+        - predicted agreed deal.
         - conv_finished
         - deal_detected
         - num_utts
@@ -300,6 +301,7 @@ class GamePlay:
 
         # for each mname - get the issue-wise counts for each issue.
         deal = self.predict_deal_obj.get_deal(conv)
+        results["joint"]["deal"] = deal
 
         # compute per model metrics.
         for mname in conv["cxts"].keys():
