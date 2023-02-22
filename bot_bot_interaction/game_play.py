@@ -343,7 +343,7 @@ class GamePlay:
         else:
             results["joint"]["deal_detected"] = 0
 
-        return joint_points
+        return results
 
     def save_overall_results(self):
         """Compute the results from all the convs and store to a file.
@@ -366,7 +366,6 @@ class GamePlay:
             "joint": {},
         }
 
-        print(self.all_convs[0])
         mnames = list(self.all_convs[0]["results"]["per_model"].keys())
 
         for mname in mnames:
