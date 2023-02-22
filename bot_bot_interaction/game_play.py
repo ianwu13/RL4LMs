@@ -15,6 +15,8 @@ class GamePlay:
 
         self.predict_deal_obj = PredictAgreedDeal(self.config)
 
+        self.all_convs = None
+
     def game_play(self):
         """Make the two models interact with each other and store the logs."""
         
@@ -61,6 +63,8 @@ class GamePlay:
         with open(out_path, "w") as f:
             json.dump(all_convs, f, indent=4)
         print(f"Convs stored at: {out_path}")
+
+        self.all_convs = all_convs[:]
 
     def setup_cxts(self):
         """Prepare cxts from a dataset file."""
@@ -229,6 +233,18 @@ class GamePlay:
                 "utts": [],
                 "results": {},
             }
+
+        per_model:
+        - num_words
+        - points
+
+        joint:
+        - conv_finished
+        - deal_detected
+        - num_utts
+        - joint_points
+        - pareto_optimal
+
         """
 
         results = {
@@ -290,9 +306,76 @@ class GamePlay:
         return joint_points
 
     def save_overall_results(self):
-        """Compute the results from all the convs and store to a file."""
+        """Compute the results from all the convs and store to a file.
         
-        overall_results = {}
+        per_model:
+        - num_words - avg for conv finished.
+        - points - avg for the cases where conv was finished and deal was detected.
+
+        joint:
+        - conv_finished - fract
+        - deal_detected - fract. for conv finished
+        - num_utts - avg for conv finished
+        - joint_points - avg for conv finished and deal detected.
+        - pareto_optimal - frac for conv finished and deal detected.
+        """
+        assert self.all_convs
+
+        overall_results = {
+            "per_model": {},
+            "joint": {},
+        }
+
+        mnames = list(self.all_convs[0]["results"]["per_model"].keys())
+
+        for mname in mnames:
+            overall_results["per_model"][mname] = {}
+        
+        # per_model
+        for mname in mnames:
+            num_words, points = [], []
+            for conv in self.all_convs:
+                if conv["results"]["joint"]["conv_finished"]:
+                    num_words.append(conv["results"]["per_model"][mname]["num_words"])
+                
+                    if conv["results"]["joint"]["deal_detected"]:
+                        points.append(conv["results"]["per_model"][mname]["points"])
+            
+            if num_words:
+                overall_results["per_model"][mname]["num_words"] = sum(num_words) / len(num_words)
+            
+            if points:
+                overall_results["per_model"][mname]["points"] = sum(points) / len(points)
+        
+        # joint
+        conv_finished, deal_detected, num_utts, joint_points, pareto_optimal = [], [], [], [], []
+        for conv in self.all_convs:
+            conv_finished.append(conv["results"]["joint"]["conv_finished"])
+
+            if conv["results"]["joint"]["conv_finished"]:
+                deal_detected.append(conv["results"]["joint"]["deal_detected"])
+
+                num_utts.append(conv["results"]["joint"]["num_utts"])
+
+                if conv["results"]["joint"]["deal_detected"]:
+                    joint_points.append(conv["results"]["joint"]["joint_points"])
+
+                    pareto_optimal.append(conv["results"]["joint"]["pareto_optimal"])
+
+        if conv_finished:
+            overall_results["joint"]["conv_finished"] = sum(conv_finished) / len(conv_finished)
+
+        if deal_detected:
+            overall_results["joint"]["deal_detected"] = sum(deal_detected) / len(deal_detected)
+
+        if num_utts:
+            overall_results["joint"]["num_utts"] = sum(num_utts) / len(num_utts)
+
+        if joint_points:
+            overall_results["joint"]["joint_points"] = sum(joint_points) / len(joint_points)
+
+        if pareto_optimal:
+            overall_results["joint"]["pareto_optimal"] = sum(pareto_optimal) / len(pareto_optimal)
 
         out_path = os.path.join(self.config.results_dir, "overall_results.json")
         with open(out_path, "w") as f:
