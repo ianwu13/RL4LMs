@@ -121,12 +121,14 @@ class GamePlay:
         """
 
         with open(self.cxt_pairs_path, "r") as f:
-            cxt_pairs = json.load(f)["cxts"][:self.config.num_convs // 2]
+            cxt_pairs = json.load(f)["cxts"][: self.config.num_convs // 2]
         
         final_cxt_pairs = []
-
         for cxt_pair in cxt_pairs:
+            
             rev_pair = f"{cxt_pair.split('$$$')[1]}$$${cxt_pair.split('$$$')[0]}"
+
+            # add both - regardless of whether they are the same.
             final_cxt_pairs += [cxt_pair, rev_pair]
         
         assert len(final_cxt_pairs) == self.config.num_convs
