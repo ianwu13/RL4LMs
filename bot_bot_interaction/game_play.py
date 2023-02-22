@@ -11,9 +11,14 @@ class GamePlay:
         self.config = config
         self.agents = agents
 
-        self.setup_cxts()
-
         self.predict_deal_obj = PredictAgreedDeal(self.config)
+
+        # set up the contexts
+        self.cxt_pairs_path = self.config.dataset_path.replace(".csv", "_cxt_pairs.json")
+        if not os.path.exists(self.cxt_pairs_path):
+            self.setup_cxts()
+        # now load the required number of cxt pairs from the top of the file.
+        self.load_cxts()
 
         self.all_convs = None
 
@@ -30,7 +35,9 @@ class GamePlay:
                 "results": {},
             }
 
-            ag_cxts = self.choose_agent_contexts()
+            # choose the two contexts for this conv
+            ag_cxts = self.chosen_cxt_pairs[conv_ix].split("$$$")
+
             # setup agent contexts - and reset internal storage.
             for ag, ag_cxt in zip(self.agents, ag_cxts):
                 ag.reset_agent(ag_cxt)
@@ -67,14 +74,17 @@ class GamePlay:
         self.all_convs = all_convs[:]
 
     def setup_cxts(self):
-        """Prepare cxts from a dataset file."""
+        """Prepare cxts from a dataset file - remove duplicates, shuffle and to persist the order, store them to a file.
+        """
+
         rows = []
         with open(self.config.dataset_path, "r") as f:
             for ix, line in enumerate(f):
                 if ix:
                     rows.append(line)
 
-        all_cxt_pairs = set()
+        cxt_pair_set = set()
+
         for row in rows:
 
             items = row.split("<context>")
@@ -83,12 +93,45 @@ class GamePlay:
             cxt1 = items[1].split("<history>")[0].strip()
             cxt2 = items[2].strip()
 
-            cxt_pair = f"{cxt1}$$${cxt2}"
-            all_cxt_pairs.add(cxt_pair)
+            opt1, opt2 = f"{cxt1}$$${cxt2}", f"{cxt2}$$${cxt1}"
 
-        self.all_cxt_pairs = sorted(list(all_cxt_pairs))
-        print(f"Extracted all cxt pairs from: {self.config.dataset_path}")
-        print(f"Num unique cxt pairs: {len(self.all_cxt_pairs)}")
+            if opt1 in cxt_pair_set or opt2 in cxt_pair_set:
+                continue
+
+            # otherwise
+            cxt_pair_set.add(opt1)
+
+        for item in cxt_pair_set:
+            reverse_item = f"{item.split('$$$')[1]}$$${item.split('$$$')[0]}"
+            assert reverse_item not in cxt_pair_set
+
+        cxt_pairs = sorted(list(cxt_pair_set))
+        random.shuffle(cxt_pairs)
+
+        # save them to a file.
+        with open(self.cxt_pairs_path, "w") as f:
+            json.dump({"cxts": cxt_pairs}, f)
+        print(f"cxt pairs stored at: {self.cxt_pairs_path}")
+
+    def load_cxts(self):
+        """Load the required number of cxt pairs from a file.
+
+        Basically - now we extract unique pairs from the file -> and then make sure both (cxt1, cx2) and (cxt2, cxt1) are covered. That is why we will always simulate an even no. of conversations in total.
+        """
+
+        with open(self.cxt_pairs_path, "r") as f:
+            cxt_pairs = json.load(f)["cxts"][:self.config.num_convs // 2]
+        
+        final_cxt_pairs = []
+
+        for cxt_pair in cxt_pairs:
+            rev_pair = f"{cxt_pair.split('$$$')[1]}$$${cxt_pair.split('$$$')[0]}"
+            final_cxt_pairs += [cxt_pair, rev_pair]
+        
+        assert len(final_cxt_pairs) == self.config.num_convs
+        
+        self.chosen_cxt_pairs = final_cxt_pairs[:]
+        print("Required cxt pairs loaded from file.")
         
     def choose_agent_contexts(self):
         """Return a list of two randomly chosen contexts."""
