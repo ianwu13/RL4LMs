@@ -94,7 +94,7 @@ class OfflineRLAgent(Agent):
     def __init__(self, config, name) -> None:
         super().__init__(config, name)
 
-        self.initial_rtg = 100
+        self.initial_rtg = 0
 
         tokenizer_id = "t5-base"
         padding_side = "right"
