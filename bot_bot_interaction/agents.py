@@ -319,14 +319,11 @@ class SupervisedRankingAgent(Agent):
 
         max_cand, max_q = None, float("-inf")
 
-        print("Candidates: ")
         for cand, scores in cand2scores.items():
             this_quality = self.compute_cand_quality(scores)
-            print(cand, this_quality)
             if this_quality > max_q:
                 max_q = this_quality
                 max_cand = cand
-        print("End candidates")
         assert max_cand
         return max_cand
 
