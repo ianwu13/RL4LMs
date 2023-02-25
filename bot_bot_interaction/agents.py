@@ -77,7 +77,8 @@ class SupervisedAgent(Agent):
                                         max_length=self.max_new_tokens,
                                         truncation=True)
         resp = resp.replace("<unk>you>", "").replace("<unk>EOU>", "").strip()
-        resp = resp.replace("<pad>", "").replace("</s>", "").strip()
+        resp = resp.replace("<pad>", "").replace("</s>", "").replace("<unk>","").strip()
+        resp = resp.replace("selection>", "<selection>").strip()
 
         # add response to the start of the history.
         self.input_seq = self.input_seq.replace("<history>", f"<history> <you> {resp}")
@@ -93,7 +94,7 @@ class OfflineRLAgent(Agent):
     def __init__(self, config, name) -> None:
         super().__init__(config, name)
 
-        self.initial_rtg = 100
+        self.initial_rtg = 0
 
         tokenizer_id = "t5-base"
         padding_side = "right"
@@ -104,6 +105,10 @@ class OfflineRLAgent(Agent):
 
         model_path = os.path.join(self.config.log_dir, self.name.split("_ix")[0], "model")
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
+
+        # device
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model = self.model.to(self.device)
 
         self.input_max_length = 512
         self.max_new_tokens = 64
@@ -144,7 +149,7 @@ class OfflineRLAgent(Agent):
         
         input_ids = self.tokenizer(self.input_seq, return_tensors="pt", truncation=True, padding=True, max_length=self.input_max_length).input_ids
         out_encs = self.model.generate(
-            input_ids,
+            input_ids.to(self.device),
             num_beams=self.num_beams,
             do_sample=self.do_sample, 
             top_p=self.top_p,
@@ -152,11 +157,12 @@ class OfflineRLAgent(Agent):
             max_new_tokens=self.max_new_tokens,
             min_length=self.min_length
             )
-        resp = self.tokenizer.decode(out_encs[0],
+        resp = self.tokenizer.decode(out_encs[0].to("cpu"),
                                         max_length=self.max_new_tokens,
                                         truncation=True)
         resp = resp.replace("<unk>you>", "").replace("<unk>EOU>", "").strip()
-        resp = resp.replace("<pad>", "").replace("</s>", "").strip()
+        resp = resp.replace("<pad>", "").replace("</s>", "").replace("<unk>","").strip()
+        resp = resp.replace("selection>", "<selection>").strip()
 
         # add response to the start of the history.
         self.input_seq = self.input_seq.replace("<history>", f"<history> <you> {resp}")
