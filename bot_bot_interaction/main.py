@@ -8,6 +8,7 @@ and then make them iteract.
 import json
 import os
 import sys
+import copy
 
 from config import Config
 from game_play import GamePlay
@@ -40,7 +41,7 @@ def main():
     # save the config.
     out_path = os.path.join(config.results_dir, "config.json")
     with open(out_path, "w") as f:
-        save_config = vars(config)
+        save_config = copy.deepcopy(vars(config))
         del save_config["model_typ2class"]
         json.dump(save_config, f, indent=4)
     print(f"Config stored at: {out_path}")
