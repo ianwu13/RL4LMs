@@ -27,7 +27,7 @@ class Config:
         self.log_dir = "/home/ICT2000/chawla/nego_rl/logs/rl4lm_exps/"
         self.out_dir = "/home/ICT2000/chawla/nego_rl/logs/bot_bot_results/"
         
-        self.model_names = [f"{item}_{self.model_types[ix]}_ix{ix}" for ix, item in enumerate(self.model_names)]
+        self.model_names = [f"{item}_typ_{self.model_types[ix]}_ix{ix}" for ix, item in enumerate(self.model_names)]
         
         self.override_results = True
 

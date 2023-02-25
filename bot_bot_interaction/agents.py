@@ -33,7 +33,7 @@ class SupervisedAgent(Agent):
         self.tokenizer.truncation_side = truncation_side
         self.tokenizer.padding_side = padding_side
 
-        model_path = os.path.join(self.config.log_dir, self.name.split("_ix")[0], "model")
+        model_path = os.path.join(self.config.log_dir, self.name.split("_typ_")[0], "model")
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
 
         # device
@@ -106,7 +106,7 @@ class SupervisedRankingAgent(Agent):
         self.tokenizer.truncation_side = truncation_side
         self.tokenizer.padding_side = padding_side
 
-        model_path = os.path.join(self.config.log_dir, self.name.split("_ix")[0], "model")
+        model_path = os.path.join(self.config.log_dir, self.name.split("_typ_")[0], "model")
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
 
         # to be used for scoring the generated candidates.
@@ -343,7 +343,7 @@ class OfflineRLAgent(Agent):
         self.tokenizer.truncation_side = truncation_side
         self.tokenizer.padding_side = padding_side
 
-        model_path = os.path.join(self.config.log_dir, self.name.split("_ix")[0], "model")
+        model_path = os.path.join(self.config.log_dir, self.name.split("_typ_")[0], "model")
         self.model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
 
         # device
