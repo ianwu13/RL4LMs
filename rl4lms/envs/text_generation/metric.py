@@ -971,7 +971,7 @@ class Seq2SeqPerplexity(BaseMetric):
 
             encodings = self._tokenizer(
                 batch_prompt_texts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
-            ).input_ids.to(device)
+            )
 
             ref_encodings = self._tokenizer(
                 batch_ref_texts, return_tensors="pt", truncation=True, padding=True, max_length=self._max_length
@@ -980,7 +980,9 @@ class Seq2SeqPerplexity(BaseMetric):
             ref_encodings[ref_encodings == 0] = -100
 
             with torch.no_grad():
-                outputs = model(encodings, labels=ref_encodings)
+                outputs = model(encodings.input_ids.to(device),
+                attention_mask=encodings.attention_mask.to(device),
+                labels=ref_encodings)
                 neg_log_likelihood = outputs[0]
 
             nlls.append(neg_log_likelihood)
