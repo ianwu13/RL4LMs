@@ -42,7 +42,7 @@ def main():
     with open(out_path, "w") as f:
         save_config = vars(config)
         del save_config["model_typ2class"]
-        json.dump(, f, indent=4)
+        json.dump(save_config, f, indent=4)
     print(f"Config stored at: {out_path}")
     
     # get the two agents.
