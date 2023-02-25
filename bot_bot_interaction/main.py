@@ -40,7 +40,9 @@ def main():
     # save the config.
     out_path = os.path.join(config.results_dir, "config.json")
     with open(out_path, "w") as f:
-        json.dump(vars(config), f, indent=4)
+        save_config = vars(config)
+        del save_config["model_typ2class"]
+        json.dump(, f, indent=4)
     print(f"Config stored at: {out_path}")
     
     # get the two agents.
