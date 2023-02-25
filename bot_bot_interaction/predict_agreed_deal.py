@@ -2,8 +2,11 @@
 Class to use the trained model for predicting the agreed deal from a finished conversation.
 """
 
-import torch
+import operator
+import numpy as np
+import torch # type: ignore
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM # type: ignore
+from torch.nn import CrossEntropyLoss # type: ignore
 
 class PredictAgreedDeal:
     def __init__(self, config) -> None:
@@ -209,3 +212,130 @@ class PredictAgreedDeal:
 
         deal = self.extract_deal(pred, ano2mod)
         return deal
+
+    def get_all_feasible_deals(self, input_seq):
+        """Get all feasible deals based on the counts."""
+        # first get the counts of the three items in this dialogue.
+        cxt = input_seq.split("<history>")[0].replace("<context>","").strip()
+        items = cxt.split()
+        assert len(items) == 11
+
+        i1_c, i2_c, i3_c = int(items[2].rstrip(",")), int(items[5].rstrip(",")), int(items[8].rstrip(","))
+        ccs = [i1_c, i2_c, i3_c]
+
+        issues = None
+        if "book" in cxt:
+            issues = ["book", "hat", "ball"]
+        else:
+            issues = ["food", "water", "firewood"]
+        
+        counts = {}
+        for iss, cc in zip(issues, ccs):
+            counts[iss] = cc
+
+        mnames = ["<you>","<them>"]
+        all_deals = []
+
+        for d1 in range(counts[issues[0]] + 1):
+            for d2 in range(counts[issues[1]] + 1):
+                for d3 in range(counts[issues[2]] + 1):
+                    new_deal = {
+                        mnames[0]: {
+                            issues[0]: d1,
+                            issues[1]: d2,
+                            issues[2]: d3,
+                        },
+                        mnames[1]: {
+                            issues[0]: counts[issues[0]] - d1,
+                            issues[1]: counts[issues[1]] - d2,
+                            issues[2]: counts[issues[2]] - d3,
+                        }
+                    }
+                    all_deals.append(new_deal)
+        
+        return all_deals
+
+    def get_dd_pred_texts(self, feasible_deals):
+        """Convert feasible deals into model outputs.
+        always map <you> to <alice>
+        """
+        batch_pred_texts = []
+        for deal in feasible_deals:
+            pred_txt = None
+            if "book" in deal["<you>"]:
+                pred_txt = f"<alice> book={deal['<you>']['book']} hat={deal['<you>']['hat']} ball={deal['<you>']['ball']} <bob> book={deal['<them>']['book']} hat={deal['<them>']['hat']} ball={deal['<them>']['ball']} <EOU>"
+            else:
+                pred_txt = f"<alice> food={deal['<you>']['food']} water={deal['<you>']['water']} firewood={deal['<you>']['firewood']} <bob> food={deal['<them>']['food']} water={deal['<them>']['water']} firewood={deal['<them>']['firewood']} <EOU>"
+            batch_pred_texts.append(pred_txt)
+
+        return batch_pred_texts
+
+    def get_dd_prompt_texts(self, input_seq, cand, num_feasible_deals):
+        """Generate prompt texts for a particular candidate utterance."""
+        
+        if "<selection>" in cand:
+            pt_str = input_seq.replace("<history>", f"<history> <you> {cand}")
+        else:
+            pt_str = input_seq.replace("<history>", f"<history> <them> <selection> <you> {cand}")
+
+        pt_str = pt_str.replace("<you>", "<alice>").replace("<them>", "<bob>")
+        
+        prompt_texts = [pt_str for _ in range(num_feasible_deals)]
+        return prompt_texts
+
+    def get_deal_dists(self, input_seq, cands):
+        """Run the predict deal model (batchwise), and compute the entire
+        distribution - sorted.
+        
+        always map <you> to <alice>
+        """
+
+        # list of strs, each representing a feasible deal between alice and bob.
+        feasible_deals = self.get_all_feasible_deals(input_seq)
+        batch_pred_texts = self.get_dd_pred_texts(feasible_deals)
+
+        cand2dist = {}
+        for cand in cands:
+            
+            batch_prompt_texts = self.get_dd_prompt_texts(input_seq, cand, len(feasible_deals))
+
+            encodings = self.tokenizer(
+                    batch_prompt_texts, return_tensors="pt", truncation=True, padding=True, max_length=self.max_length
+                )
+
+            pred_encodings = self.tokenizer(
+                    batch_pred_texts, return_tensors="pt", truncation=True, padding=True, max_length=self.max_length
+                ).input_ids
+
+            pred_encodings[pred_encodings == 0] = -100
+
+            with torch.no_grad():
+                outputs = self.model(
+                    encodings.input_ids.to(self.device),
+                    attention_mask=encodings.attention_mask.to(self.device),
+                    labels=pred_encodings.to(self.device))
+
+            logits = outputs[1]
+
+            loss_fct = CrossEntropyLoss()
+
+            scores = []
+            for ix in range(len(feasible_deals)):
+                loss = loss_fct(logits[ix].reshape(-1, self.model.decoder.config.vocab_size), pred_encodings[ix].to(self.device).view(-1))
+                scores.append(-loss.to("cpu").item())
+
+            dist = {}
+            for deal, score in zip(batch_pred_texts, scores):
+                dist[deal.replace("<alice>", "<you>").replace("<bob>","<them>")] = score
+
+            # convert to prob scores
+            tot_sum = sum([np.exp(item) for item in dist.values()])
+            for deal in dist.keys():
+                dist[deal] = np.exp(dist[deal]) / tot_sum
+
+            # sort the deal dict as pr keys.
+            sorted_x = sorted(dist.items(), key=operator.itemgetter(1))
+            sorted_x.reverse()
+            cand2dist[cand] = sorted_x[:]
+
+        return cand2dist

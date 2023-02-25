@@ -1,7 +1,7 @@
 import json
 import os
 import random
-from tqdm import tqdm
+from tqdm import tqdm # type: ignore
 
 from bot_bot_interaction.predict_agreed_deal import PredictAgreedDeal
 

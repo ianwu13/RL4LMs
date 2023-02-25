@@ -1,17 +1,18 @@
 import os
 from agents import SupervisedAgent, OfflineRLAgent
+from bot_bot_interaction.agents import SupervisedRankingAgent
 
 class Config:
     def __init__(self) -> None:
         
         # Step 1: Give the names of the model directories under the log folder.
         self.model_names = [
-            "ndsord_dnd1",
+            "nds_dnd1",
             "nds_dnd1",
         ]
 
-        # Step 2: Give the types of these two models in the same order, from ["supervised", "offline_rl"]
-        self.model_types = ["offline_rl", "supervised"]
+        # Step 2: Give the types of these two models in the same order, from ["supervised", "supervised_ranking", "offline_rl"]
+        self.model_types = ["supervised_ranking", "supervised"]
         assert len(self.model_types) == len(self.model_names) == 2
 
         # Step 3: Give the path to the dataset for extracting initial agent contexts
@@ -26,13 +27,14 @@ class Config:
         self.log_dir = "/home/ICT2000/chawla/nego_rl/logs/rl4lm_exps/"
         self.out_dir = "/home/ICT2000/chawla/nego_rl/logs/bot_bot_results/"
         
-        self.model_names = [f"{item}_ix{ix}" for ix, item in enumerate(self.model_names)]
+        self.model_names = [f"{item}_{self.model_types[ix]}_ix{ix}" for ix, item in enumerate(self.model_names)]
         
         self.override_results = True
 
         self.model_typ2class = {
             "offline_rl": OfflineRLAgent,
             "supervised": SupervisedAgent,
+            "supervised_ranking": SupervisedRankingAgent,
         }
 
         # process

@@ -5,6 +5,7 @@ and then make them iteract.
 """
 
 # imports
+import json
 import os
 import sys
 
@@ -35,6 +36,12 @@ def main():
             return
         else:
             os.makedirs(config.results_dir)
+
+    # save the config.
+    out_path = os.path.join(config.results_dir, "config.json")
+    with open(out_path, "w") as f:
+        json.dump(vars(config), f, indent=4)
+    print(f"Config stored at: {out_path}")
     
     # get the two agents.
     agents = []
