@@ -203,11 +203,11 @@ class SupervisedRankingAgent(Agent):
         batch_pred_texts = self.get_pred_texts(cands)
 
         encodings = self.tokenizer(
-                    batch_prompt_texts, return_tensors="pt", truncation=True, padding=True, max_length=self.max_length
+                    batch_prompt_texts, return_tensors="pt", truncation=True, padding=True, max_length=self.input_max_length
                 )
 
         pred_encodings = self.tokenizer(
-                    batch_pred_texts, return_tensors="pt", truncation=True, padding=True, max_length=self.max_length
+                    batch_pred_texts, return_tensors="pt", truncation=True, padding=True, max_length=self.max_new_tokens
                 ).input_ids
 
         pred_encodings[pred_encodings == 0] = -100
