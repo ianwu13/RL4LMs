@@ -121,9 +121,9 @@ class SupervisedRankingAgent(Agent):
         self.num_beams = 1
         self.min_length = 3
         self.do_sample = True
-        self.top_p = 0.6
+        self.top_p = 0.8
         self.top_k = 100
-        self.num_return_sequences = 4
+        self.num_return_sequences = 8
 
         print(f"Agent initialized: {self.name}")
 
