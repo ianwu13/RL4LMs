@@ -12,7 +12,7 @@ class Config:
         ]
 
         # Step 2: Give the types of these two models in the same order, from ["supervised", "supervised_ranking", "offline_rl"]
-        self.model_types = ["supervised_ranking", "supervised"]
+        self.model_types = ["supervised_ranking", "supervised_ranking"]
         assert len(self.model_types) == len(self.model_names) == 2
 
         # Step 3: Give the path to the dataset for extracting initial agent contexts
