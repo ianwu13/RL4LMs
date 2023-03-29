@@ -3,7 +3,7 @@
 #SBATCH --gres=gpu:a100:2
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
-#SBATCH --time=24:00:00
+#SBATCH --time=12:00:00
 
 # Change to proper directory
 if [[ "$PWD" =~ "RL4LMs/slurms" ]]
@@ -25,8 +25,10 @@ fi
 
 # setup
 module purge
+module load conda
 eval "$(conda shell.bash hook)"
 conda activate nego_rl
 
 # run
+echo "TRAINING T5 NEXT UTTERANCE MODEL - INPUT: NOP"
 CUDA_LAUNCH_BLOCKING=1 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/ian_experiments/t5_no_opt_pref.yml --base_path_to_store_results ../logs/ --experiment_name ian_t5_no_opt_pref
