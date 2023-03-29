@@ -1,4 +1,4 @@
-from rl4lms.data_pools.nego_datasets import CaSiNoOfflineRLDTGenSel, CaSiNoPredictAgreedDeal, CaSiNoSupGenSel, DealornodealOfflineRLDTGenSel, DealornodealPredictAgreedDeal, DealornodealSupGenSel
+from rl4lms.data_pools.nego_datasets import CaSiNoOfflineRLDTGenSel, CaSiNoPredictAgreedDeal, CaSiNoSupGenSel, DealornodealOfflineRLDTGenSel, DealornodealPredictAgreedDeal, DealornodealSupGenSel, CaSiNoSupGenSelOracle, DealornodealSupGenSelOracle, CaSiNoSupGenSelNoOPTPref, DealornodealSupGenSelNoOPTPref
 from rl4lms.data_pools.text_generation_pool import TextGenPool, Sample
 from rl4lms.data_pools.task_utils.totto import preprocess_utils
 from datasets import load_dataset
@@ -787,6 +787,10 @@ class NegoDialogSel(TextGenPool):
         dname2cls = {
             "casino": CaSiNoSupGenSel,
             "dealornodeal": DealornodealSupGenSel,
+            "casinoOracle": CaSiNoSupGenSelOracle,
+            "dealornodealOracle": DealornodealSupGenSelOracle,
+            "casinoNOP": CaSiNoSupGenSelNoOPTPref,
+            "dealornodealNOP": DealornodealSupGenSelNoOPTPref,
         }
 
         for dname in dnames:

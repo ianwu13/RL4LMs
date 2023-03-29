@@ -1,0 +1,2 @@
+pet name: nds
+basically - response generation models that only output a <selection> token instead of outputing the submit deal and accept/reject decisions. This takes away the burden of learning to generate the precise final deal, and learning to generate the next response.
