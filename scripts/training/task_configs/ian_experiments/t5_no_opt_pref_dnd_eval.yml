@@ -9,8 +9,8 @@ datapool:
   id: nego_dialog_sel
   args:
     data_dir: "/home1/ianwu/nego_rl/data/nego_dialog_sel/"
-    dnames: ["casinoOracle", "dealornodealOracle"]
-    eval_dname: "all" # either use "all" or a specific dname
+    dnames: ["casinoNOP", "dealornodealNOP"]
+    eval_dname: "dealornodealNOP" # either use "all" or a specific dname
 
 alg:
   id: supervised

@@ -4,6 +4,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=12:00:00
+#SBATCH --account=glucas_540
 
 # Change to proper directory
 if [[ "$PWD" =~ "RL4LMs/slurms" ]]
@@ -30,5 +31,5 @@ eval "$(conda shell.bash hook)"
 conda activate nego_rl
 
 # run
-echo "TRAINING T5 NEXT UTTERANCE MODEL - INPUT: ORACLE"
-CUDA_LAUNCH_BLOCKING=1 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/ian_experiments/t5_oracle.yml --base_path_to_store_results ../logs/ --experiment_name ian_t5_oracle
+echo "TRAINING T5 NEXT UTTERANCE MODEL - INPUT: NOP, _dnd_eval"
+CUDA_LAUNCH_BLOCKING=1 python3 scripts/training/train_text_generation.py --config_path scripts/training/task_configs/ian_experiments/t5_no_opt_pref_dnd_eval.yml --base_path_to_store_results ../logs/ --experiment_name ian_t5_no_opt_pref_dnd_eval

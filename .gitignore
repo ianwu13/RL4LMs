@@ -137,3 +137,6 @@ cluster_utils/
 
 # slurm job outputs
 *.out
+
+# results and plots
+results/**
